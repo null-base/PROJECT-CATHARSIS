@@ -1,6 +1,5 @@
 import {
   ActionRowBuilder,
-  MessageFlags,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -17,7 +16,7 @@ export const registerCommand = {
   },
 
   handleModalSubmit: async (interaction: any) => {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
 
     try {
       const riotId = interaction.fields.getTextInputValue("riotId");
@@ -55,7 +54,7 @@ export const registerCommand = {
         embeds: [createRegisterEmbed(playerData)],
       });
     } catch (error) {
-      console.log(error);
+      console.error("登録エラー:", error);
       await interaction.editReply({
         embeds: [createErrorEmbed("登録に失敗しました")],
         ephemeral: true,
@@ -71,6 +70,7 @@ const createRegisterModal = () => {
   return new ModalBuilder()
     .setCustomId("registerModal") // IDを明示的に設定
     .setTitle("プレイヤー登録")
+    
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
@@ -83,8 +83,10 @@ const createRegisterModal = () => {
           .setCustomId("tagline")
           .setLabel("タグライン（例: KR1）")
           .setStyle(TextInputStyle.Short)
-      )
-    );
+      ),
+
+  );
+
 };
 
 export default registerCommand;

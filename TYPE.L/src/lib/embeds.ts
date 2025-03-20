@@ -4,20 +4,27 @@ import { calculateStrength } from "./calculations";
 
 export const createRegisterEmbed = (player: PlayerData) => {
   const soloStrength = calculateStrength(
-    player.solo_tier,
-    player.solo_division,
-    player.solo_lp
+    player.solo_tier || "UNRANKED",
+    player.solo_division || "",
+    player.solo_lp || 0,
+    player.level
   );
   const flexStrength = calculateStrength(
-    player.flex_tier,
-    player.flex_division,
-    player.flex_lp
+    player.flex_tier || "UNRANKED",
+    player.flex_division || "",
+    player.flex_lp || 0,
+    player.level
   );
-  const averageStrength = (soloStrength + flexStrength) / 2;
+  const averageStrength = (soloStrength + flexStrength) / 2 || 0;
 
   return new EmbedBuilder()
     .setTitle("✅ 登録完了")
     .setDescription(`${player.riot_id}#${player.tagline}`)
+    .setFooter({
+      text: "Power by @null_sensei",
+      iconURL:
+        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
+    })
     .addFields(
       {
         name: "🌍 リージョン",
@@ -53,13 +60,33 @@ export const createRegisterEmbed = (player: PlayerData) => {
 };
 
 export const createProfileEmbed = (player: PlayerData, stats: any) => {
+  const soloStrength = calculateStrength(
+    player.solo_tier || "UNRANKED",
+    player.solo_division || "",
+    player.solo_lp || 0,
+    player.level
+  );
+
+  const flexStrength = calculateStrength(
+    player.flex_tier || "UNRANKED",
+    player.flex_division || "",
+    player.flex_lp || 0,
+    player.level
+  );
+
+  const averageStrength = (soloStrength + flexStrength) / 2 || 0;
   const laneStats = stats.topLanes
     .map((lane: string) => `• ${lane}`)
     .join("\n");
 
   return new EmbedBuilder()
     .setTitle(`${player.riot_id}#${player.tagline}`)
-    .setColor(0x00ff00)
+    .setColor(averageStrength > 2500 ? 0x0099ff : 0x00ff00) // 強さに応じて色変更
+    .setFooter({
+      text: "Power by @null_sensei",
+      iconURL:
+        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
+    })
     .addFields(
       {
         name: "🌍 リージョン",
@@ -97,6 +124,22 @@ export const createProfileEmbed = (player: PlayerData, stats: any) => {
         name: "🌐 レーン統計 (TOP3)",
         value: laneStats || "データなし",
         inline: false,
+      },
+      {
+        name: "💪 推定強さ",
+        value:
+          `平均: ${averageStrength.toFixed(1)}\n` +
+          `ソロ: ${soloStrength.toFixed(1)}\n` +
+          `フレックス: ${flexStrength.toFixed(1)}`,
+        inline: false,
+      },
+      {
+        name: "📈 レベル補正",
+        value: `現在レベル: ${player.level}\n補正倍率: ×${(
+          1 +
+          Math.min(player.level * 5, 300) / 1000
+        ).toFixed(2)}`,
+        inline: true,
       }
     );
 };
@@ -110,6 +153,11 @@ export const createBalanceEmbed = (
   return new EmbedBuilder()
     .setTitle("⚖️ チームバランス結果")
     .setColor(0x7289da)
+    .setFooter({
+      text: "Power by @null_sensei",
+      iconURL:
+        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
+    })
     .addFields(
       {
         name: "Team A",

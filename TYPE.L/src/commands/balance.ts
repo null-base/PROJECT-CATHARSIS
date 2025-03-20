@@ -1,4 +1,3 @@
-import { MessageFlags } from "discord.js";
 import { getAllPlayers } from "../db";
 import { calculateStrength } from "../lib/calculations";
 import { createBalanceEmbed, createErrorEmbed } from "../lib/embeds";
@@ -10,7 +9,7 @@ export const balanceCommand = {
   },
 
   execute: async (interaction: any) => {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
 
     try {
       const players = getAllPlayers();
@@ -19,13 +18,33 @@ export const balanceCommand = {
       // ソロランクとフレックスランクの平均値を計算してソート
       const sortedPlayers = [...players].sort((a, b) => {
         const aStrength =
-          (calculateStrength(a.solo_tier, a.solo_division, a.solo_lp) +
-            calculateStrength(a.flex_tier, a.flex_division, a.flex_lp)) /
+          (calculateStrength(
+            a.solo_tier || "UNRANKED",
+            a.solo_division || "",
+            a.solo_lp || 0,
+            a.level
+          ) +
+            calculateStrength(
+              a.flex_tier || "UNRANKED",
+              a.flex_division || "",
+              a.flex_lp || 0,
+              a.level
+            )) /
           2;
 
         const bStrength =
-          (calculateStrength(b.solo_tier, b.solo_division, b.solo_lp) +
-            calculateStrength(b.flex_tier, b.flex_division, b.flex_lp)) /
+          (calculateStrength(
+            b.solo_tier || "UNRANKED",
+            b.solo_division || "",
+            b.solo_lp || 0,
+            b.level
+          ) +
+            calculateStrength(
+              b.flex_tier || "UNRANKED",
+              b.flex_division || "",
+              b.flex_lp || 0,
+              b.level
+            )) /
           2;
 
         return bStrength - aStrength;
@@ -42,12 +61,14 @@ export const balanceCommand = {
           (calculateStrength(
             player.solo_tier,
             player.solo_division,
-            player.solo_lp
+            player.solo_lp,
+            player.level
           ) +
             calculateStrength(
               player.flex_tier,
               player.flex_division,
-              player.flex_lp
+              player.flex_lp,
+              player.level
             )) /
           2;
 

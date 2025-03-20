@@ -10,13 +10,14 @@ db.run(`
     riot_id TEXT,
     tagline TEXT,
     region TEXT,
-    solo_tier TEXT,
-    solo_division TEXT,
-    solo_lp INTEGER,
-    flex_tier TEXT,
-    flex_division TEXT,
-    flex_lp INTEGER,
-    level INTEGER
+    solo_tier TEXT DEFAULT 'UNRANKED',
+    solo_division TEXT DEFAULT '',
+    solo_lp INTEGER DEFAULT 0,
+    flex_tier TEXT DEFAULT 'UNRANKED',
+    flex_division TEXT DEFAULT '',
+    flex_lp INTEGER DEFAULT 0,
+    level INTEGER,
+    profile_icon_id INTEGER DEFAULT 0
   )
 `);
 
@@ -27,20 +28,23 @@ export const getPlayer = (userId: string): PlayerData | null => {
 };
 
 export const savePlayer = (player: PlayerData) => {
-  db.run(`INSERT OR REPLACE INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
-    player.user_id,
-    player.puuid,
-    player.riot_id,
-    player.tagline,
-    player.region,
-    player.solo_tier,
-    player.solo_division,
-    player.solo_lp,
-    player.flex_tier,
-    player.flex_division,
-    player.flex_lp,
-    player.level,
-  ]);
+  db.run(
+    `INSERT OR REPLACE INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      player.user_id,
+      player.puuid,
+      player.riot_id,
+      player.tagline,
+      player.region,
+      player.solo_tier,
+      player.solo_division,
+      player.solo_lp,
+      player.flex_tier,
+      player.flex_division,
+      player.flex_lp,
+      player.level,
+    ]
+  );
 };
 
 export const deletePlayer = (userId: string) => {

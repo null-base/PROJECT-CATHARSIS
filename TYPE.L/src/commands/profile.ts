@@ -1,4 +1,3 @@
-import { MessageFlags } from "discord.js";
 import { getPlayer } from "../db";
 import { processMatchStats } from "../lib/calculations";
 import { createErrorEmbed, createProfileEmbed } from "../lib/embeds";
@@ -11,7 +10,7 @@ export const profileCommand = {
   },
 
   execute: async (interaction: any) => {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.deferReply();
 
     try {
       const player = getPlayer(interaction.user.id);

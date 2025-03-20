@@ -1,4 +1,4 @@
-import { EmbedBuilder, MessageFlags } from "discord.js";
+import { EmbedBuilder } from "discord.js";
 import { createErrorEmbed } from "../lib/embeds";
 
 export const pingCommand = {
@@ -16,6 +16,11 @@ export const pingCommand = {
       const embed = new EmbedBuilder()
         .setColor(0x00ff00)
         .setTitle("🏓 Pong!")
+        .setFooter({
+          text: "Power by @null_sensei",
+          iconURL:
+            "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
+        })
         .addFields(
           { name: "📡 WebSocket Ping", value: `${latency}ms`, inline: true },
           { name: "⚡ API Latency", value: `${apiLatency}ms`, inline: true }
@@ -23,12 +28,10 @@ export const pingCommand = {
 
       await interaction.reply({
         embeds: [embed],
-        flags: MessageFlags.Ephemeral,
       });
     } catch (error) {
       await interaction.reply({
         embeds: [createErrorEmbed("Pingの取得に失敗しました")],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },

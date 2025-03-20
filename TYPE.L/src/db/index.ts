@@ -29,7 +29,7 @@ export const getPlayer = (userId: string): PlayerData | null => {
 
 export const savePlayer = (player: PlayerData) => {
   db.run(
-    `INSERT OR REPLACE INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       player.user_id,
       player.puuid,
@@ -43,6 +43,7 @@ export const savePlayer = (player: PlayerData) => {
       player.flex_division,
       player.flex_lp,
       player.level,
+      player.profile_icon_id,
     ]
   );
 };

@@ -47,6 +47,7 @@ export const registerCommand = {
         flex_division: flexRank?.rank || "",
         flex_lp: flexRank?.leaguePoints || 0,
         level: summonerData.summonerLevel,
+        profile_icon_id: summonerData.profileIconId || 0,
       };
 
       savePlayer(playerData);
@@ -70,23 +71,21 @@ const createRegisterModal = () => {
   return new ModalBuilder()
     .setCustomId("registerModal") // IDを明示的に設定
     .setTitle("プレイヤー登録")
-    
+
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
           .setCustomId("riotId")
-          .setLabel("Riot ID（ユーザー名）")
+          .setLabel("ゲーム名")
           .setStyle(TextInputStyle.Short)
       ),
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
           .setCustomId("tagline")
-          .setLabel("タグライン（例: KR1）")
+          .setLabel("タグライン（例: JP1）")
           .setStyle(TextInputStyle.Short)
-      ),
-
-  );
-
+      )
+    );
 };
 
 export default registerCommand;

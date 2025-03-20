@@ -12,6 +12,14 @@ export const RiotAPI = {
     return response.data.puuid;
   },
 
+  async getGamenameTagline(puuid: string): Promise<any> {
+    const response = await axios.get(
+      `https://asia.api.riotgames.com//riot/account/v1/accounts/by-puuid/${puuid}`,
+      { headers: { "X-Riot-Token": RIOT_API_KEY } }
+    );
+    return response.data;
+  },
+
   detectRegionFromPuuid(puuid: string): string {
     const regionMap: Record<string, string> = {
       NA: "na1",

@@ -11,6 +11,7 @@ export type PlayerData = {
   flex_division: string;
   flex_lp: number;
   level: number;
+  profile_icon_id: number;
 };
 
 export type MatchData = {

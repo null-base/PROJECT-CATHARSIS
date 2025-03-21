@@ -17,7 +17,7 @@ export const pingCommand = {
         .setColor(0x00ff00)
         .setTitle("🏓 Pong!")
         .setFooter({
-          text: "Power by @null_sensei • null-base.com",
+          text: "Powered by @null_sensei • null-base.com",
           iconURL:
             "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
         })

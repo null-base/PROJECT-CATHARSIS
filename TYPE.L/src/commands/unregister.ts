@@ -28,7 +28,7 @@ export const unregisterCommand = {
         })
         .setDescription("登録情報を正常に削除しました")
         .setFooter({
-          text: "Power by @null_sensei • null-base.com",
+          text: "Powered by @null_sensei • null-base.com",
           iconURL:
             "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
         });

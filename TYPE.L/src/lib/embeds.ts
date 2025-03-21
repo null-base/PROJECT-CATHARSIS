@@ -21,7 +21,7 @@ export const createRegisterEmbed = (player: PlayerData) => {
     .setTitle("✅ 登録完了")
     .setDescription(`${player.riot_id}#${player.tagline}`)
     .setFooter({
-      text: "Power by @null_sensei • null-base.com",
+      text: "Powered by @null_sensei • null-base.com",
       iconURL:
         "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
     })
@@ -83,7 +83,7 @@ export const createProfileEmbed = (player: PlayerData, stats: any) => {
     .setTitle(`${player.riot_id}#${player.tagline}`)
     .setColor(averageStrength > 2500 ? 0x0099ff : 0x00ff00) // 強さに応じて色変更
     .setFooter({
-      text: "Power by @null_sensei • null-base.com",
+      text: "Powered by @null_sensei • null-base.com",
       iconURL:
         "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
     })
@@ -154,7 +154,7 @@ export const createBalanceEmbed = (
     .setTitle("⚖️ チームバランス結果")
     .setColor(0x7289da)
     .setFooter({
-      text: "Power by @null_sensei • null-base.com",
+      text: "Powered by @null_sensei • null-base.com",
       iconURL:
         "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
     })

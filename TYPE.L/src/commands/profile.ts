@@ -24,7 +24,7 @@ export const profileCommand = {
           .setTitle("⚠️ 未登録ユーザー")
           .setDescription("プロフィールを表示するには登録が必要です")
           .setFooter({
-            text: "Power by @null_sensei • null-base.com",
+            text: "Powered by @null_sensei • null-base.com",
             iconURL:
               "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
           })
@@ -123,7 +123,7 @@ export const profileCommand = {
       })
         .setThumbnail(iconUrl)
         .setFooter({
-          text: "Power by @null_sensei • null-base.com",
+          text: "Powered by @null_sensei • null-base.com",
           iconURL:
             "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
         });

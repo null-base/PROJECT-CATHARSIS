@@ -17,7 +17,7 @@ client.once("ready", () => {
   console.log(`✅ Logged in as ${client.user?.tag}`);
   client.user?.setPresence({
     activities: [{ name: "League of Legends", type: ActivityType.Playing }],
-    status: "online",
+    status: "idle",
   });
 
   // コマンド登録

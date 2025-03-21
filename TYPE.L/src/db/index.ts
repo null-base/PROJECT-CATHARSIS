@@ -55,3 +55,5 @@ export const deletePlayer = (userId: string) => {
 export const getAllPlayers = (): PlayerData[] => {
   return db.prepare("SELECT * FROM players").all() as PlayerData[];
 };
+
+export { gameDB } from "./gameDB";

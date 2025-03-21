@@ -1,21 +1,3 @@
-import { RANK_VALUES, TIER_VALUES } from "./config";
-
-export const calculateStrength = (
-  tier: string,
-  division: string,
-  lp: number,
-  level: number // 新しい引数を追加
-): number => {
-  const tierValue = TIER_VALUES[tier.toUpperCase()] || 0;
-  const divisionValue = RANK_VALUES[division.toUpperCase()] || 0;
-  const lpValue = lp || 0;
-
-  // レベル補正（レベル1あたり+5、最大+300）
-  const levelBonus = Math.min(level * 5, 300);
-
-  return (tierValue + divisionValue + lpValue * 0.1) * (1 + levelBonus / 1000);
-};
-
 export const processMatchStats = (matches: any[], puuid: string) => {
   const stats = {
     total: { games: 0, wins: 0, kills: 0, deaths: 0, assists: 0 },

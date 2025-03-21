@@ -1,94 +1,164 @@
-import { getAllPlayers } from "../db";
-import { calculateStrength } from "../lib/calculations";
-import { createBalanceEmbed, createErrorEmbed } from "../lib/embeds";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+} from "discord.js";
+import { gameDB } from "../db/gameDB";
+import { createCustomGameEmbed, createErrorEmbed } from "../lib/embeds";
 
 export const balanceCommand = {
   data: {
     name: "balance",
-    description: "バランスチームを作成",
+    description: "カスタムゲームの参加管理とチーム分け",
+    options: [
+      {
+        name: "track",
+        description: "進行中のカスタムゲームを追跡（ゲームID入力）",
+        type: 3,
+        required: false,
+      },
+    ],
   },
 
   execute: async (interaction: any) => {
     await interaction.deferReply();
 
     try {
-      const players = getAllPlayers();
-      if (players.length < 2) throw new Error("最低2人のプレイヤーが必要です");
+      const trackId = interaction.options.getString("track");
 
-      // ソロランクとフレックスランクの平均値を計算してソート
-      const sortedPlayers = [...players].sort((a, b) => {
-        const aStrength =
-          (calculateStrength(
-            a.solo_tier || "UNRANKED",
-            a.solo_division || "",
-            a.solo_lp || 0,
-            a.level
-          ) +
-            calculateStrength(
-              a.flex_tier || "UNRANKED",
-              a.flex_division || "",
-              a.flex_lp || 0,
-              a.level
-            )) /
-          2;
+      // 追跡IDが指定されている場合はトラッキング処理
+      if (trackId) {
+        const game = gameDB.getGame(trackId);
 
-        const bStrength =
-          (calculateStrength(
-            b.solo_tier || "UNRANKED",
-            b.solo_division || "",
-            b.solo_lp || 0,
-            b.level
-          ) +
-            calculateStrength(
-              b.flex_tier || "UNRANKED",
-              b.flex_division || "",
-              b.flex_lp || 0,
-              b.level
-            )) /
-          2;
-
-        return bStrength - aStrength;
-      });
-
-      let teamA: any[] = [];
-      let teamB: any[] = [];
-      let totalA = 0;
-      let totalB = 0;
-
-      for (const player of sortedPlayers) {
-        // ソロとフレックスの平均値を強さとして使用
-        const strength =
-          (calculateStrength(
-            player.solo_tier,
-            player.solo_division,
-            player.solo_lp,
-            player.level
-          ) +
-            calculateStrength(
-              player.flex_tier,
-              player.flex_division,
-              player.flex_lp,
-              player.level
-            )) /
-          2;
-
-        if (totalA <= totalB) {
-          teamA.push(player);
-          totalA += strength;
-        } else {
-          teamB.push(player);
-          totalB += strength;
+        if (!game) {
+          return await interaction.editReply({
+            embeds: [
+              createErrorEmbed(`ゲームID: ${trackId} が見つかりません。`),
+            ],
+          });
         }
+
+        const participants = gameDB.getParticipants(trackId);
+
+        if (participants.length === 0) {
+          return await interaction.editReply({
+            embeds: [createErrorEmbed("このゲームには参加者がいません。")],
+          });
+        }
+
+        await interaction.editReply({
+          content: "🔍 ゲームの追跡を開始しました...",
+        });
+
+        return;
       }
 
-      await interaction.editReply({
-        embeds: [createBalanceEmbed(teamA, teamB, totalA, totalB)],
+      // 新規ゲームの作成
+      const gameId = `GAME_${Date.now()}`;
+      gameDB.createGame(gameId, interaction.channelId);
+
+      // 参加案内のEmbed作成
+      const embed = createCustomGameEmbed(gameId, []);
+
+      // ボタンとセレクトメニューを作成
+      const joinButton = new ButtonBuilder()
+        .setCustomId(`join_${gameId}`)
+        .setLabel("参加する")
+        .setStyle(ButtonStyle.Success)
+        .setEmoji("✅");
+
+      const leaveButton = new ButtonBuilder()
+        .setCustomId(`leave_${gameId}`)
+        .setLabel("退出する")
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji("❌");
+
+      const voiceJoinButton = new ButtonBuilder()
+        .setCustomId(`voice_${gameId}`)
+        .setLabel("VC参加者を追加")
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji("🎤");
+
+      const balanceTeamButton = new ButtonBuilder()
+        .setCustomId(`balance_${gameId}`)
+        .setLabel("チーム分け")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("⚖️");
+
+      const trackGameButton = new ButtonBuilder()
+        .setCustomId(`track_${gameId}`)
+        .setLabel("ゲーム追跡")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("🔍");
+
+      // 既存のボタン作成部分に終了ボタンを追加
+      const endGameButton = new ButtonBuilder()
+        .setCustomId(`end_${gameId}`)
+        .setLabel("ゲーム終了")
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji("🏁");
+
+      const laneSelect = new StringSelectMenuBuilder()
+        .setCustomId(`lane_${gameId}`)
+        .setPlaceholder("希望レーンを選択")
+        .addOptions([
+          new StringSelectMenuOptionBuilder()
+            .setLabel("TOP")
+            .setValue("TOP")
+            .setEmoji("↖️"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("JUNGLE")
+            .setValue("JUNGLE")
+            .setEmoji("🌳"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("MID")
+            .setValue("MID")
+            .setEmoji("➡️"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("BOTTOM")
+            .setValue("BOTTOM")
+            .setEmoji("↘️"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("SUPPORT")
+            .setValue("SUPPORT")
+            .setEmoji("🛡️"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("FILL")
+            .setValue("FILL")
+            .setEmoji("🔄"),
+        ]);
+
+      const buttonRow1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        joinButton,
+        leaveButton,
+        voiceJoinButton
+      );
+      // ボタン行の更新（buttonRow2に追加）
+      const buttonRow2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        balanceTeamButton,
+        trackGameButton,
+        endGameButton
+      );
+      const selectRow =
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+          laneSelect
+        );
+
+      const reply = await interaction.editReply({
+        embeds: [embed],
+        components: [buttonRow1, buttonRow2, selectRow],
       });
+
+      // メッセージIDを保存
+      gameDB.updateGameMessage(gameId, reply.id);
     } catch (error) {
       console.error("バランシングエラー:", error);
       await interaction.editReply({
-        embeds: [createErrorEmbed("チーム分けに失敗しました")],
-        ephemeral: true,
+        embeds: [
+          createErrorEmbed("カスタムゲーム処理中にエラーが発生しました"),
+        ],
       });
     }
   },

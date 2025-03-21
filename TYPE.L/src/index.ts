@@ -10,7 +10,11 @@ import { interactionCreate } from "./events/interactionCreate";
 import { DISCORD_TOKEN } from "./lib/config";
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates, // ボイスチャンネル情報アクセス用のインテント追加
+    GatewayIntentBits.GuildMembers, // ギルドメンバー情報のインテント追加
+  ],
 });
 
 client.once("ready", () => {

@@ -27,3 +27,24 @@ export type CommandHandler = {
   data: any;
   execute: (interaction: any) => Promise<void>;
 };
+
+// カスタムゲーム関連の型定義
+export type CustomGameData = {
+  id: string;
+  status: "LOBBY" | "TRACKING" | "COMPLETED";
+  created_at: number;
+  channel_id: string;
+  message_id: string;
+};
+
+export type ParticipantData = {
+  id: number;
+  game_id: string;
+  user_id: string;
+  puuid: string;
+  riot_id: string;
+  tagline: string;
+  lane: string;
+  team: string;
+  strength: number;
+};

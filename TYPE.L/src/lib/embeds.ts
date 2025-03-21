@@ -1,22 +1,7 @@
 import { EmbedBuilder } from "discord.js";
-import type { PlayerData } from "../types/types";
-import { calculateStrength } from "./calculations";
+import type { ParticipantData, PlayerData } from "../types/types";
 
 export const createRegisterEmbed = (player: PlayerData) => {
-  const soloStrength = calculateStrength(
-    player.solo_tier || "UNRANKED",
-    player.solo_division || "",
-    player.solo_lp || 0,
-    player.level
-  );
-  const flexStrength = calculateStrength(
-    player.flex_tier || "UNRANKED",
-    player.flex_division || "",
-    player.flex_lp || 0,
-    player.level
-  );
-  const averageStrength = (soloStrength + flexStrength) / 2 || 0;
-
   return new EmbedBuilder()
     .setTitle("✅ 登録完了")
     .setDescription(`${player.riot_id}#${player.tagline}`)
@@ -47,41 +32,19 @@ export const createRegisterEmbed = (player: PlayerData) => {
             ? `${player.flex_tier} ${player.flex_division} (${player.flex_lp}LP)`
             : "未ランク",
         inline: true,
-      },
-      {
-        name: "💪 推定強さ",
-        value: `${averageStrength.toFixed(1)} (Solo: ${soloStrength.toFixed(
-          1
-        )}, Flex: ${flexStrength.toFixed(1)})`,
-        inline: true,
       }
     )
     .setColor(0x00ff00);
 };
 
 export const createProfileEmbed = (player: PlayerData, stats: any) => {
-  const soloStrength = calculateStrength(
-    player.solo_tier || "UNRANKED",
-    player.solo_division || "",
-    player.solo_lp || 0,
-    player.level
-  );
-
-  const flexStrength = calculateStrength(
-    player.flex_tier || "UNRANKED",
-    player.flex_division || "",
-    player.flex_lp || 0,
-    player.level
-  );
-
-  const averageStrength = (soloStrength + flexStrength) / 2 || 0;
   const laneStats = stats.topLanes
     .map((lane: string) => `• ${lane}`)
     .join("\n");
 
   return new EmbedBuilder()
     .setTitle(`${player.riot_id}#${player.tagline}`)
-    .setColor(averageStrength > 2500 ? 0x0099ff : 0x00ff00) // 強さに応じて色変更
+    .setColor(0x00ff00) // 固定色に変更
     .setFooter({
       text: "Powered by @null_sensei • null-base.com",
       iconURL:
@@ -124,32 +87,11 @@ export const createProfileEmbed = (player: PlayerData, stats: any) => {
         name: "🌐 レーン統計 (TOP3)",
         value: laneStats || "データなし",
         inline: false,
-      },
-      {
-        name: "💪 推定強さ",
-        value:
-          `平均: ${averageStrength.toFixed(1)}\n` +
-          `ソロ: ${soloStrength.toFixed(1)}\n` +
-          `フレックス: ${flexStrength.toFixed(1)}`,
-        inline: false,
-      },
-      {
-        name: "📈 レベル補正",
-        value: `現在レベル: ${player.level}\n補正倍率: ×${(
-          1 +
-          Math.min(player.level * 5, 300) / 1000
-        ).toFixed(2)}`,
-        inline: true,
       }
     );
 };
 
-export const createBalanceEmbed = (
-  teamA: any[],
-  teamB: any[],
-  totalA: number,
-  totalB: number
-) => {
+export const createBalanceEmbed = (teamA: any[], teamB: any[]) => {
   return new EmbedBuilder()
     .setTitle("⚖️ チームバランス結果")
     .setColor(0x7289da)
@@ -168,17 +110,107 @@ export const createBalanceEmbed = (
         name: "Team B",
         value: teamB.map((p) => `• ${p.riot_id}#${p.tagline}`).join("\n"),
         inline: true,
-      },
-      {
-        name: "強さ合計",
-        value: `🟢 Team A: ${totalA.toFixed(1)}\n🔴 Team B: ${totalB.toFixed(
-          1
-        )}\n📊 差: ${Math.abs(totalA - totalB).toFixed(1)}`,
-        inline: false,
       }
     );
 };
 
 export const createErrorEmbed = (message: string) => {
   return new EmbedBuilder().setColor(0xff0000).setDescription(`❌ ${message}`);
+};
+
+// カスタムゲーム募集Embed
+export const createCustomGameEmbed = (
+  gameId: string,
+  participants: ParticipantData[]
+) => {
+  // レーン別の参加者を整理
+  const lanes = {
+    TOP: [] as ParticipantData[],
+    JUNGLE: [] as ParticipantData[],
+    MID: [] as ParticipantData[],
+    BOTTOM: [] as ParticipantData[],
+    SUPPORT: [] as ParticipantData[],
+    FILL: [] as ParticipantData[],
+  };
+
+  for (const p of participants) {
+    if (p.lane in lanes) {
+      lanes[p.lane as keyof typeof lanes].push(p);
+    } else {
+      lanes.FILL.push(p);
+    }
+  }
+
+  // 参加者リスト文字列を作成
+  let participantsStr = "";
+
+  if (participants.length === 0) {
+    participantsStr = "まだ誰も参加していません";
+  } else {
+    for (const [lane, players] of Object.entries(lanes)) {
+      if (players.length === 0) continue;
+
+      participantsStr += `**${lane}**\n`;
+      for (const p of players) {
+        const teamBadge = p.team ? `[${p.team}] ` : "";
+        participantsStr += `${teamBadge}${p.riot_id}#${p.tagline}\n`;
+      }
+      participantsStr += "\n";
+    }
+  }
+
+  return new EmbedBuilder()
+    .setColor(0x0099ff)
+    .setTitle("🎮 カスタムゲーム募集中")
+    .setDescription(`参加ボタンを押して、希望レーンを選択してください。`)
+    .addFields(
+      {
+        name: `参加者 (${participants.length})`,
+        value: participantsStr || "まだ誰も参加していません",
+        inline: false,
+      },
+      { name: "ゲームID", value: `\`${gameId}\``, inline: false },
+      { name: "ステータス", value: `🟢 募集中`, inline: true }
+    )
+    .setFooter({
+      text: "Powered by @null_sensei • null-base.com",
+      iconURL:
+        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
+    });
+};
+
+// createCustomBalanceEmbed 関数
+export const createCustomBalanceEmbed = (
+  teamA: ParticipantData[],
+  teamB: ParticipantData[]
+) => {
+  const formatTeam = (team: ParticipantData[]) => {
+    return team
+      .map((p) => {
+        const lane = p.lane !== "FILL" ? `[${p.lane}] ` : "";
+        return `${lane}${p.riot_id}#${p.tagline}`;
+      })
+      .join("\n");
+  };
+
+  return new EmbedBuilder()
+    .setColor(0x7289da)
+    .setTitle("⚖️ チームバランス結果")
+    .addFields(
+      {
+        name: "🟦 TEAM BLUE",
+        value: formatTeam(teamA) || "メンバーなし",
+        inline: true,
+      },
+      {
+        name: "🟥 TEAM RED",
+        value: formatTeam(teamB) || "メンバーなし",
+        inline: true,
+      }
+    )
+    .setFooter({
+      text: "Powered by @null_sensei • null-base.com",
+      iconURL:
+        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
+    });
 };

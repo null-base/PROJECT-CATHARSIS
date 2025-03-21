@@ -1,5 +1,6 @@
 import { InteractionType } from "discord.js";
 import {
+  aboutCommand,
   balanceCommand,
   historyCommand,
   pingCommand,
@@ -19,6 +20,7 @@ import {
 import { createErrorEmbed } from "../lib/embeds";
 
 const commands = {
+  about: aboutCommand,
   balance: balanceCommand,
   profile: profileCommand,
   register: registerCommand,

@@ -1,8 +1,8 @@
-import { EmbedBuilder } from "discord.js";
 import { getPlayer } from "../db";
-import { RiotAPI } from "../lib/riotApi";
-import { createErrorEmbed } from "../lib/embeds";
 import { getProfileIconUrl } from "../lib/ddragon";
+import { createStandardEmbed } from "../lib/embedHelper";
+import { createErrorEmbed } from "../lib/embeds";
+import { RiotAPI } from "../lib/riotApi";
 
 export const historyCommand = {
   data: {
@@ -34,7 +34,10 @@ export const historyCommand = {
       const iconUrl = await getProfileIconUrl(player.profile_icon_id);
 
       // 試合履歴を取得
-      const matchIds = await RiotAPI.getMatchHistory(player.puuid, player.region);
+      const matchIds = await RiotAPI.getMatchHistory(
+        player.puuid,
+        player.region
+      );
 
       // 最新5試合に絞る
       const recentMatchIds = matchIds.slice(0, 5);
@@ -46,16 +49,12 @@ export const historyCommand = {
         )
       );
 
-      // 結果をEmbedに表示する
-      const embed = new EmbedBuilder()
-        .setColor(0x0099ff)
+      // 統一された方法でEmbed作成
+      const embed = await createStandardEmbed(interaction.client, 0x0099ff);
+      embed
         .setTitle(`${accountData.gameName}#${accountData.tagLine} の最近の試合`)
         .setThumbnail(iconUrl)
-        .setDescription("直近5試合の結果")
-        .setFooter({
-          text: "Powered by @null_sensei • null-base.com",
-          iconURL: "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-        });
+        .setDescription("直近5試合の結果");
 
       let winCount = 0;
       let totalKills = 0;
@@ -75,8 +74,10 @@ export const historyCommand = {
         const kills = participant.kills;
         const deaths = participant.deaths;
         const assists = participant.assists;
-        const kda = deaths === 0 ? "Perfect" : ((kills + assists) / deaths).toFixed(2);
-        const cs = participant.totalMinionsKilled + participant.neutralMinionsKilled;
+        const kda =
+          deaths === 0 ? "Perfect" : ((kills + assists) / deaths).toFixed(2);
+        const cs =
+          participant.totalMinionsKilled + participant.neutralMinionsKilled;
         let lane = participant.lane;
         if (lane === "BOTTOM" && participant.role.includes("SUPPORT")) {
           lane = "SUPPORT";
@@ -90,24 +91,32 @@ export const historyCommand = {
         totalAssists += assists;
 
         const emoji = win ? "✅" : "❌";
-        const matchTime = new Date(match.info.gameCreation).toLocaleDateString();
+        const matchTime = new Date(
+          match.info.gameCreation
+        ).toLocaleDateString();
 
         embed.addFields({
           name: `${emoji} ${champion} [${lane}] - ${matchTime}`,
           value: `${gameMode} (${gameDuration}分)\n${kills}/${deaths}/${assists} (KDA: ${kda}) CS: ${cs}`,
-          inline: false
+          inline: false,
         });
       });
 
       const totalGames = matches.length;
-      const winRate = totalGames > 0 ? (winCount / totalGames * 100).toFixed(1) : "0.0";
-      const avgKda = totalDeaths > 0 ? ((totalKills + totalAssists) / totalDeaths).toFixed(2) : "Perfect";
+      const winRate =
+        totalGames > 0 ? ((winCount / totalGames) * 100).toFixed(1) : "0.0";
+      const avgKda =
+        totalDeaths > 0
+          ? ((totalKills + totalAssists) / totalDeaths).toFixed(2)
+          : "Perfect";
 
       // 統計サマリーを先頭に追加
       embed.spliceFields(0, 0, {
         name: "📊 サマリー",
-        value: `${totalGames}試合 ${winCount}勝 ${totalGames - winCount}敗\n勝率: ${winRate}%\n平均KDA: ${avgKda} (${totalKills}/${totalDeaths}/${totalAssists})`,
-        inline: false
+        value: `${totalGames}試合 ${winCount}勝 ${
+          totalGames - winCount
+        }敗\n勝率: ${winRate}%\n平均KDA: ${avgKda} (${totalKills}/${totalDeaths}/${totalAssists})`,
+        inline: false,
       });
 
       await interaction.editReply({ embeds: [embed] });

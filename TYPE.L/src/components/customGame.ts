@@ -119,7 +119,6 @@ export const handleVoiceJoin = async (interaction: any, gameId: string) => {
     const member = await interaction.guild.members.fetch(interaction.user.id);
 
     if (!member.voice?.channel) {
-      console.log("ボイスチャンネル情報が取得できません:", member);
       return await interaction.editReply({
         content:
           "⚠️ ボイスチャンネルに参加していないか、ボイス情報を取得できません。",

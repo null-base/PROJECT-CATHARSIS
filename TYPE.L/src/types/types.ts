@@ -29,13 +29,14 @@ export type CommandHandler = {
 };
 
 // カスタムゲーム関連の型定義
-export type CustomGameData = {
-  id: string;
-  status: "LOBBY" | "TRACKING" | "COMPLETED";
-  created_at: number;
+export interface CustomGameData {
+  game_id: string;
   channel_id: string;
-  message_id: string;
-};
+  message_id?: string;
+  status: string;
+  balance_method: string;
+  created_at: number;
+}
 
 export type ParticipantData = {
   id: number;

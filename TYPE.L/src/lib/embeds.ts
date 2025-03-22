@@ -1,127 +1,34 @@
 import { EmbedBuilder } from "discord.js";
 import type { ParticipantData, PlayerData } from "../types/types";
+import { BOT_DEVELOPER_ID, BOT_DEVELOPER_NAME, BOT_WEBSITE } from "./config";
 
-export const createRegisterEmbed = (player: PlayerData) => {
-  return new EmbedBuilder()
-    .setTitle("✅ 登録完了")
-    .setDescription(`${player.riot_id}#${player.tagline}`)
+// フッター用の共通関数
+const addStandardFooter = (embed: EmbedBuilder) => {
+  return embed
     .setFooter({
-      text: "Powered by @null_sensei • null-base.com",
-      iconURL:
-        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
+      text: `Powered by @${BOT_DEVELOPER_NAME} • ${BOT_WEBSITE}`,
+      iconURL: `https://cdn.discordapp.com/avatars/${BOT_DEVELOPER_ID}/953d512ef19ef1e915fe733fa637b67e.webp`,
     })
-    .addFields(
-      {
-        name: "🌍 リージョン",
-        value: player.region.toUpperCase(),
-        inline: true,
-      },
-      { name: "📊 レベル", value: player.level.toString(), inline: true },
-      {
-        name: "🏅 ソロランク",
-        value:
-          player.solo_tier !== "UNRANKED"
-            ? `${player.solo_tier} ${player.solo_division} (${player.solo_lp}LP)`
-            : "未ランク",
-        inline: true,
-      },
-      {
-        name: "🎖️ フレックスランク",
-        value:
-          player.flex_tier !== "UNRANKED"
-            ? `${player.flex_tier} ${player.flex_division} (${player.flex_lp}LP)`
-            : "未ランク",
-        inline: true,
-      }
-    )
-    .setColor(0x00ff00);
 };
 
-export const createProfileEmbed = (player: PlayerData, stats: any) => {
-  const laneStats = stats.topLanes
-    .map((lane: string) => `• ${lane}`)
-    .join("\n");
+// チーム分け方法の表示名を取得する関数
+export function getMethodName(method: string): string {
+  const methodNames: Record<string, string> = {
+    random: "ランダム",
+    winrate: "勝率バランス",
+    level: "レベル均等",
+    rank: "ランク均等",
+    lane: "レーン実力",
+  };
 
-  return new EmbedBuilder()
-    .setTitle(`${player.riot_id}#${player.tagline}`)
-    .setColor(0x00ff00) // 固定色に変更
-    .setFooter({
-      text: "Powered by @null_sensei • null-base.com",
-      iconURL:
-        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-    })
-    .addFields(
-      {
-        name: "🌍 リージョン",
-        value: player.region.toUpperCase(),
-        inline: true,
-      },
-      { name: "📊 レベル", value: player.level.toString(), inline: true },
-      {
-        name: "🏅 ソロランク",
-        value:
-          player.solo_tier !== "UNRANKED"
-            ? `${player.solo_tier} ${player.solo_division} (${player.solo_lp}LP)`
-            : "未ランク",
-        inline: true,
-      },
-      {
-        name: "🎖️ フレックスランク",
-        value:
-          player.flex_tier !== "UNRANKED"
-            ? `${player.flex_tier} ${player.flex_division} (${player.flex_lp}LP)`
-            : "未ランク",
-        inline: true,
-      },
-      {
-        name: "📈 統計",
-        value: `🎮 ${stats.total.games}戦\n🏆 ${stats.total.winRate}% WR\n⚔️ ${stats.total.kda} KDA`,
-        inline: false,
-      },
-      {
-        name: "🏆 チャンピオン (TOP3)",
-        value: stats.topChampions.join("\n") || "データなし",
-        inline: false,
-      },
-      {
-        name: "🌐 レーン統計 (TOP3)",
-        value: laneStats || "データなし",
-        inline: false,
-      }
-    );
-};
+  return methodNames[method] || "ランダム";
+}
 
-export const createBalanceEmbed = (teamA: any[], teamB: any[]) => {
-  return new EmbedBuilder()
-    .setTitle("⚖️ チームバランス結果")
-    .setColor(0x7289da)
-    .setFooter({
-      text: "Powered by @null_sensei • null-base.com",
-      iconURL:
-        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-    })
-    .addFields(
-      {
-        name: "Team A",
-        value: teamA.map((p) => `• ${p.riot_id}#${p.tagline}`).join("\n"),
-        inline: true,
-      },
-      {
-        name: "Team B",
-        value: teamB.map((p) => `• ${p.riot_id}#${p.tagline}`).join("\n"),
-        inline: true,
-      }
-    );
-};
-
-export const createErrorEmbed = (message: string) => {
-  return new EmbedBuilder().setColor(0xff0000).setDescription(`❌ ${message}`);
-};
-
-// カスタムゲーム募集Embed
+// カスタムゲーム募集Embed (balanceMethod パラメータを追加)
 export const createCustomGameEmbed = (
   gameId: string,
-  participants: ParticipantData[]
+  participants: ParticipantData[],
+  balanceMethod: string = "random"
 ) => {
   // レーン別の参加者を整理
   const lanes = {
@@ -159,7 +66,7 @@ export const createCustomGameEmbed = (
     }
   }
 
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor(0x0099ff)
     .setTitle("🎮 カスタムゲーム募集中")
     .setDescription(`参加ボタンを押して、希望レーンを選択してください。`)
@@ -169,14 +76,128 @@ export const createCustomGameEmbed = (
         value: participantsStr || "まだ誰も参加していません",
         inline: false,
       },
-      { name: "ゲームID", value: `\`${gameId}\``, inline: false },
-      { name: "ステータス", value: `🟢 募集中`, inline: true }
-    )
-    .setFooter({
-      text: "Powered by @null_sensei • null-base.com",
-      iconURL:
-        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-    });
+      { name: "ゲームID", value: `\`${gameId}\``, inline: true },
+      { name: "ステータス", value: `🟢 募集中`, inline: true },
+      // チーム分け方法を表示
+      {
+        name: "チーム分け方式",
+        value: `📊 ${getMethodName(balanceMethod)}`,
+        inline: true,
+      }
+    );
+
+  // 標準フッターを追加
+  return addStandardFooter(embed);
+};
+
+export const createRegisterEmbed = (player: PlayerData) => {
+  return addStandardFooter(
+    new EmbedBuilder()
+      .setTitle("✅ 登録完了")
+      .setDescription(`${player.riot_id}#${player.tagline}`)
+      .addFields(
+        {
+          name: "🌍 リージョン",
+          value: player.region.toUpperCase(),
+          inline: true,
+        },
+        { name: "📊 レベル", value: player.level.toString(), inline: true },
+        {
+          name: "🏅 ソロランク",
+          value:
+            player.solo_tier !== "UNRANKED"
+              ? `${player.solo_tier} ${player.solo_division} (${player.solo_lp}LP)`
+              : "未ランク",
+          inline: true,
+        },
+        {
+          name: "🎖️ フレックスランク",
+          value:
+            player.flex_tier !== "UNRANKED"
+              ? `${player.flex_tier} ${player.flex_division} (${player.flex_lp}LP)`
+              : "未ランク",
+          inline: true,
+        }
+      )
+      .setColor(0x00ff00)
+  );
+};
+
+export const createProfileEmbed = (player: PlayerData, stats: any) => {
+  const laneStats = stats.topLanes
+    .map((lane: string) => `• ${lane}`)
+    .join("\n");
+
+  return addStandardFooter(
+    new EmbedBuilder()
+      .setTitle(`${player.riot_id}#${player.tagline}`)
+      .setColor(0x00ff00) // 固定色に変更
+      .addFields(
+        {
+          name: "🌍 リージョン",
+          value: player.region.toUpperCase(),
+          inline: true,
+        },
+        { name: "📊 レベル", value: player.level.toString(), inline: true },
+        {
+          name: "🏅 ソロランク",
+          value:
+            player.solo_tier !== "UNRANKED"
+              ? `${player.solo_tier} ${player.solo_division} (${player.solo_lp}LP)`
+              : "未ランク",
+          inline: true,
+        },
+        {
+          name: "🎖️ フレックスランク",
+          value:
+            player.flex_tier !== "UNRANKED"
+              ? `${player.flex_tier} ${player.flex_division} (${player.flex_lp}LP)`
+              : "未ランク",
+          inline: true,
+        },
+        {
+          name: "📈 統計",
+          value: `🎮 ${stats.total.games}戦\n🏆 ${stats.total.winRate}% WR\n⚔️ ${stats.total.kda} KDA`,
+          inline: false,
+        },
+        {
+          name: "🏆 チャンピオン (TOP3)",
+          value: stats.topChampions.join("\n") || "データなし",
+          inline: false,
+        },
+        {
+          name: "🌐 レーン統計 (TOP3)",
+          value: laneStats || "データなし",
+          inline: false,
+        }
+      )
+  );
+};
+
+export const createBalanceEmbed = (teamA: any[], teamB: any[]) => {
+  return addStandardFooter(
+    new EmbedBuilder()
+      .setTitle("⚖️ チームバランス結果")
+      .setColor(0x7289da)
+      .addFields(
+        {
+          name: "Team A",
+          value: teamA.map((p) => `• ${p.riot_id}#${p.tagline}`).join("\n"),
+          inline: true,
+        },
+        {
+          name: "Team B",
+          value: teamB.map((p) => `• ${p.riot_id}#${p.tagline}`).join("\n"),
+          inline: true,
+        }
+      )
+  );
+};
+
+export const createErrorEmbed = (message: string) => {
+  return addStandardFooter(
+    new EmbedBuilder().setColor(0xff0000).setDescription(`❌ ${message}`)
+  );
 };
 
 // createCustomBalanceEmbed 関数
@@ -193,24 +214,21 @@ export const createCustomBalanceEmbed = (
       .join("\n");
   };
 
-  return new EmbedBuilder()
-    .setColor(0x7289da)
-    .setTitle("⚖️ チームバランス結果")
-    .addFields(
-      {
-        name: "🟦 TEAM BLUE",
-        value: formatTeam(teamA) || "メンバーなし",
-        inline: true,
-      },
-      {
-        name: "🟥 TEAM RED",
-        value: formatTeam(teamB) || "メンバーなし",
-        inline: true,
-      }
-    )
-    .setFooter({
-      text: "Powered by @null_sensei • null-base.com",
-      iconURL:
-        "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-    });
+  return addStandardFooter(
+    new EmbedBuilder()
+      .setColor(0x7289da)
+      .setTitle("⚖️ チームバランス結果")
+      .addFields(
+        {
+          name: "🟦 TEAM BLUE",
+          value: formatTeam(teamA) || "メンバーなし",
+          inline: true,
+        },
+        {
+          name: "🟥 TEAM RED",
+          value: formatTeam(teamB) || "メンバーなし",
+          inline: true,
+        }
+      )
+  );
 };

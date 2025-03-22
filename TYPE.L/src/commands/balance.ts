@@ -12,55 +12,22 @@ export const balanceCommand = {
   data: {
     name: "balance",
     description: "カスタムゲームの参加管理とチーム分け",
-    options: [
-      {
-        name: "track",
-        description: "進行中のカスタムゲームを追跡（ゲームID入力）",
-        type: 3,
-        required: false,
-      },
-    ],
   },
 
   execute: async (interaction: any) => {
     await interaction.deferReply();
 
     try {
-      const trackId = interaction.options.getString("track");
-
-      // 追跡IDが指定されている場合はトラッキング処理
-      if (trackId) {
-        const game = gameDB.getGame(trackId);
-
-        if (!game) {
-          return await interaction.editReply({
-            embeds: [
-              createErrorEmbed(`ゲームID: ${trackId} が見つかりません。`),
-            ],
-          });
-        }
-
-        const participants = gameDB.getParticipants(trackId);
-
-        if (participants.length === 0) {
-          return await interaction.editReply({
-            embeds: [createErrorEmbed("このゲームには参加者がいません。")],
-          });
-        }
-
-        await interaction.editReply({
-          content: "🔍 ゲームの追跡を開始しました...",
-        });
-
-        return;
-      }
-
       // 新規ゲームの作成
       const gameId = `GAME_${Date.now()}`;
-      gameDB.createGame(gameId, interaction.channelId);
+      // デフォルトでランダム方式
+      const balanceMethod = "random";
 
-      // 参加案内のEmbed作成
-      const embed = createCustomGameEmbed(gameId, []);
+      // ゲーム作成時にバランス方法も指定
+      gameDB.createGame(gameId, interaction.channelId, balanceMethod);
+
+      // 参加案内のEmbed作成（バランス方法も渡す）
+      const embed = createCustomGameEmbed(gameId, [], balanceMethod);
 
       // ボタンとセレクトメニューを作成
       const joinButton = new ButtonBuilder()
@@ -107,27 +74,61 @@ export const balanceCommand = {
           new StringSelectMenuOptionBuilder()
             .setLabel("TOP")
             .setValue("TOP")
-            .setEmoji("↖️"),
+            .setEmoji("<:Top_icon:1352993574903484437>"),
           new StringSelectMenuOptionBuilder()
             .setLabel("JUNGLE")
             .setValue("JUNGLE")
-            .setEmoji("🌳"),
+            .setEmoji("<:Jungle_icon:1352993613210058874>"),
           new StringSelectMenuOptionBuilder()
             .setLabel("MID")
             .setValue("MID")
-            .setEmoji("➡️"),
+            .setEmoji("<:Middle_icon:1352993654003859516>"),
           new StringSelectMenuOptionBuilder()
             .setLabel("BOTTOM")
             .setValue("BOTTOM")
-            .setEmoji("↘️"),
+            .setEmoji("<:Bottom_icon:1352993685738094593>"),
           new StringSelectMenuOptionBuilder()
             .setLabel("SUPPORT")
             .setValue("SUPPORT")
-            .setEmoji("🛡️"),
+            .setEmoji("<:Support_icon:1352993718596272168>"),
           new StringSelectMenuOptionBuilder()
             .setLabel("FILL")
             .setValue("FILL")
-            .setEmoji("🔄"),
+            .setEmoji("<:All_roles_icon:1352993499850608650>"),
+        ]);
+
+      // チーム分け方法選択メニューを追加
+      const teamBalanceSelect = new StringSelectMenuBuilder()
+        .setCustomId(`balancemethod_${gameId}`)
+        .setPlaceholder("チーム分け方法を選択")
+        .addOptions([
+          new StringSelectMenuOptionBuilder()
+            .setLabel("ランダム")
+            .setValue("random")
+            .setDescription("完全にランダムでチームを分けます")
+            .setEmoji("🎲"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("勝率バランス")
+            .setValue("winrate")
+            .setDescription(
+              "過去の勝率を考慮してバランスの取れたチームを作ります"
+            )
+            .setEmoji("📊"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("レベル均等")
+            .setValue("level")
+            .setDescription("サモナーレベルが均等になるようチームを分けます")
+            .setEmoji("📈"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("ランク均等")
+            .setValue("rank")
+            .setDescription("ランクが均等になるようチームを分けます")
+            .setEmoji("🏆"),
+          new StringSelectMenuOptionBuilder()
+            .setLabel("レーン実力")
+            .setValue("lane")
+            .setDescription("レーン別の実力を考慮してチームを分けます")
+            .setEmoji("🛣️"),
         ]);
 
       const buttonRow1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -135,20 +136,23 @@ export const balanceCommand = {
         leaveButton,
         voiceJoinButton
       );
-      // ボタン行の更新（buttonRow2に追加）
       const buttonRow2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
         balanceTeamButton,
         trackGameButton,
         endGameButton
       );
-      const selectRow =
+      const selectRowLane =
         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
           laneSelect
+        );
+      const selectRowBalance =
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+          teamBalanceSelect
         );
 
       const reply = await interaction.editReply({
         embeds: [embed],
-        components: [buttonRow1, buttonRow2, selectRow],
+        components: [buttonRow1, buttonRow2, selectRowLane, selectRowBalance],
       });
 
       // メッセージIDを保存

@@ -1,6 +1,13 @@
-import { EmbedBuilder, version as discordjsVersion } from "discord.js";
-
-const BOT_VERSION = "0.0.0";
+import { EmbedBuilder } from "discord.js";
+import {
+  BOT_DEVELOPER_ID,
+  BOT_DEVELOPER_NAME,
+  BOT_GITHUB,
+  BOT_SUPPORT_SERVER,
+  BOT_VERSION,
+  BOT_WEBSITE,
+} from "../lib/config";
+import { addStandardFooter } from "../lib/embedHelper";
 
 export const aboutCommand = {
   data: {
@@ -9,94 +16,72 @@ export const aboutCommand = {
   },
 
   execute: async (interaction: any) => {
-    // 統計情報を収集
-    const guilds = interaction.client.guilds.cache.size;
-    const uptime = formatUptime(interaction.client.uptime);
-    const users = interaction.client.guilds.cache.reduce(
-      (acc: any, guild: { memberCount: any }) => acc + guild.memberCount,
-      0
-    );
+    await interaction.deferReply();
 
-    // 起動時間をフォーマット
-    const botStartTime = new Date(
-      Date.now() - interaction.client.uptime!
-    ).toLocaleString("ja-JP");
+    try {
+      // 統計情報を収集
+      const guilds = interaction.client.guilds.cache.size;
+      const users = interaction.client.guilds.cache.reduce(
+        (acc: any, guild: { memberCount: any }) => acc + guild.memberCount,
+        0
+      );
 
-    const embed = new EmbedBuilder()
-      .setColor(0x7289da)
-      .setTitle("PROJECT-CATHARSIS")
-      .setDescription(
-        "TYPE.Lは、League of Legendsのカスタムゲーム管理を支援するための多機能Botです。\n" +
-          "チーム分けやプレイヤー情報の管理、戦績確認などの機能を提供します。"
-      )
-      .setThumbnail(
-        interaction.client.user.displayAvatarURL({ dynamic: true, size: 512 })
-      )
-      .addFields(
-        {
-          name: "🛠️ バージョン",
-          value: `v${BOT_VERSION}`,
-          inline: true,
-        },
-        {
-          name: "📊 統計情報",
-          value: `サーバー数: ${guilds}\nユーザー数: ${users}\n稼働時間: ${uptime}`,
-          inline: true,
-        },
-        {
-          name: "👨‍💻 開発者",
-          value:
-            "[null先生](https://twitter.com/null_sensei)\n" +
-            "[null-base.com](https://null-base.com)",
-          inline: true,
-        },
-        {
-          name: "🔧 使用技術",
-          value: `Discord.js v${discordjsVersion}\nBun ${Bun.version}\nTypeScript`,
-          inline: true,
-        },
-        {
-          name: "🔗 リンク",
-          value:
-            "[サポートサーバー](https://discord.gg/wNgbkdXq6M)\n" +
-            "[GitHub](https://github.com/null-base)\n" +
-            "[ウェブサイト](https://null-base.com)",
-          inline: true,
-        },
-        {
-          name: "📅 最終起動",
-          value: botStartTime,
-          inline: true,
-        }
-      )
-      .setFooter({
-        text: "Powered by @null_sensei • null-base.com",
-        iconURL:
-          "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-      })
-      .setTimestamp();
+      const embed = new EmbedBuilder()
+        .setColor(0x7289da)
+        .setTitle("<:typel:1351994799112327260> PROJECT-CATHARSIS")
+        .setDescription(
+          "TYPE.Lは、League of Legendsのカスタムゲーム管理を支援するための多機能Botです。\n" +
+            "チーム分けやプレイヤー情報の管理、戦績確認などの機能を提供します。"
+        )
+        .setThumbnail(
+          interaction.client.user.displayAvatarURL({ dynamic: true, size: 512 })
+        )
+        .addFields(
+          {
+            name: "🛠️ バージョン",
+            value: `v${BOT_VERSION}`,
+            inline: true,
+          },
+          {
+            name: "📊 統計情報",
+            value: `サーバー数: ${guilds}\nユーザー数: ${users}`,
+            inline: true,
+          },
+          {
+            name: "👨‍💻 開発者",
+            value:
+              `[${BOT_DEVELOPER_NAME}(X)](https://twitter.com/null_x0o0x)\n` +
+              `[${BOT_DEVELOPER_NAME}(Discord)](https://discordapp.com/users/${BOT_DEVELOPER_ID})`,
+            inline: true,
+          },
+          {
+            name: "🔗 リンク",
+            value:
+              `[サポートサーバー](${BOT_SUPPORT_SERVER})\n` +
+              `[GitHub](${BOT_GITHUB})\n` +
+              `[ウェブサイト](https://${BOT_WEBSITE})`,
+            inline: true,
+          }
+        );
 
-    await interaction.reply({ embeds: [embed] });
+      // 標準フッターを追加
+      await addStandardFooter(embed, interaction.client);
+
+      await interaction.editReply({ embeds: [embed] });
+    } catch (error) {
+      console.error("Aboutコマンドエラー:", error);
+
+      // エラー時は簡易Embedを表示
+      const errorEmbed = new EmbedBuilder()
+        .setColor(0xff0000)
+        .setTitle("エラーが発生しました")
+        .setDescription(
+          "情報の取得中にエラーが発生しました。しばらく経ってからもう一度お試しください。"
+        );
+
+      await interaction.editReply({ embeds: [errorEmbed] });
+    }
   },
 };
-
-// 稼働時間のフォーマット関数
-function formatUptime(ms: number | null): string {
-  if (!ms) return "不明";
-
-  const seconds = Math.floor(ms / 1000);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor(((seconds % 86400) % 3600) / 60);
-  const secs = ((seconds % 86400) % 3600) % 60;
-
-  let uptime = "";
-  if (days > 0) uptime += `${days}日 `;
-  if (hours > 0) uptime += `${hours}時間 `;
-  if (minutes > 0) uptime += `${minutes}分 `;
-  uptime += `${secs}秒`;
-
-  return uptime;
-}
 
 export default aboutCommand;

@@ -3,14 +3,15 @@ import type { CustomGameData, ParticipantData } from "../types/types";
 
 const db = new Database("lol_custom_games.sqlite");
 
-// テーブル作成
+// テーブル作成 (カラム名をidからgame_idに変更)
 db.run(`
   CREATE TABLE IF NOT EXISTS games (
-    id TEXT PRIMARY KEY,
+    game_id TEXT PRIMARY KEY,
     status TEXT DEFAULT 'LOBBY',
-    created_at INTEGER,
+    created_at INTEGER DEFAULT (unixepoch()),
     channel_id TEXT,
-    message_id TEXT
+    message_id TEXT,
+    balance_method TEXT DEFAULT 'random'
   )
 `);
 
@@ -25,28 +26,34 @@ db.run(`
     lane TEXT DEFAULT 'FILL',
     team TEXT DEFAULT '',
     strength REAL DEFAULT 0,
-    FOREIGN KEY(game_id) REFERENCES games(id),
+    FOREIGN KEY(game_id) REFERENCES games(game_id),
     UNIQUE(game_id, user_id)
   )
 `);
 
 // ゲーム取得
-export const getGame = (gameId: string): CustomGameData | null => {
+export const getGame = (gameId: string): CustomGameData | undefined => {
   return db
-    .prepare("SELECT * FROM games WHERE id = ?")
-    .get(gameId) as CustomGameData | null;
+    .prepare(
+      "SELECT game_id, channel_id, message_id, status, balance_method, created_at FROM games WHERE game_id = ?"
+    )
+    .get(gameId) as CustomGameData | undefined;
 };
 
 // ゲーム作成
-export const createGame = (gameId: string, channelId: string): void => {
+export const createGame = (
+  gameId: string,
+  channelId: string,
+  balanceMethod = "random"
+) => {
   db.prepare(
-    "INSERT INTO games (id, created_at, channel_id) VALUES (?, ?, ?)"
-  ).run(gameId, Date.now(), channelId);
+    "INSERT INTO games (game_id, channel_id, balance_method) VALUES (?, ?, ?)"
+  ).run(gameId, channelId, balanceMethod);
 };
 
 // メッセージID更新
 export const updateGameMessage = (gameId: string, messageId: string): void => {
-  db.prepare("UPDATE games SET message_id = ? WHERE id = ?").run(
+  db.prepare("UPDATE games SET message_id = ? WHERE game_id = ?").run(
     messageId,
     gameId
   );
@@ -54,7 +61,21 @@ export const updateGameMessage = (gameId: string, messageId: string): void => {
 
 // ゲームステータス更新
 export const updateGameStatus = (gameId: string, status: string): void => {
-  db.prepare("UPDATE games SET status = ? WHERE id = ?").run(status, gameId);
+  db.prepare("UPDATE games SET status = ? WHERE game_id = ?").run(
+    status,
+    gameId
+  );
+};
+
+// バランス方法を更新する関数
+export const updateGameBalanceMethod = (
+  gameId: string,
+  method: string
+): void => {
+  db.prepare("UPDATE games SET balance_method = ? WHERE game_id = ?").run(
+    method,
+    gameId
+  );
 };
 
 // 参加者追加
@@ -126,6 +147,7 @@ export const gameDB = {
   createGame,
   updateGameMessage,
   updateGameStatus,
+  updateGameBalanceMethod,
   addParticipant,
   removeParticipant,
   updateParticipantLane,

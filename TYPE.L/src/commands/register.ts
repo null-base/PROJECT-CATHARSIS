@@ -22,10 +22,68 @@ export const registerCommand = {
       const riotId = interaction.fields.getTextInputValue("riotId");
       const tagline = interaction.fields.getTextInputValue("tagline");
 
-      const puuid = await RiotAPI.getPuuid(riotId, tagline);
+      // PUUIDの取得（ここで404エラーが発生する可能性がある）
+      let puuid;
+      try {
+        puuid = await RiotAPI.getPuuid(riotId, tagline);
+      } catch (apiError: any) {
+        // APIからのエラーを詳細に処理
+        if (apiError.response && apiError.response.status === 404) {
+          return await interaction.editReply({
+            embeds: [
+              createErrorEmbed(
+                `プレイヤー「${riotId}#${tagline}」が見つかりません。名前とタグラインを確認してください。`
+              ),
+            ],
+          });
+        } else if (apiError.response) {
+          console.error(
+            "APIエラー:",
+            apiError.response.status,
+            apiError.response.data
+          );
+          return await interaction.editReply({
+            embeds: [
+              createErrorEmbed(
+                `Riot APIエラー (${apiError.response.status}): ${
+                  apiError.response.data.status?.message || "不明なエラー"
+                }`
+              ),
+            ],
+          });
+        } else {
+          // ネットワークエラーなど
+          console.error("APIリクエストエラー:", apiError);
+          throw apiError; // 一般エラーとして再スロー
+        }
+      }
+
       const region = RiotAPI.detectRegionFromPuuid(puuid);
-      const summonerData = await RiotAPI.getSummonerData(region, puuid);
-      const rankData = await RiotAPI.getRankData(region, summonerData.puuid);
+
+      let summonerData;
+      try {
+        summonerData = await RiotAPI.getSummonerData(region, puuid);
+      } catch (apiError: any) {
+        if (apiError.response && apiError.response.status === 404) {
+          return await interaction.editReply({
+            embeds: [
+              createErrorEmbed(
+                `サモナー情報が見つかりません。Riot IDが正しいか確認してください。`
+              ),
+            ],
+          });
+        }
+        throw apiError;
+      }
+
+      let rankData;
+      try {
+        rankData = await RiotAPI.getRankData(region, summonerData.puuid);
+      } catch (apiError: any) {
+        // ランクデータがなくても続行可能
+        console.warn("ランクデータ取得エラー:", apiError);
+        rankData = [];
+      }
 
       const soloRank = rankData.find(
         (d: any) => d.queueType === "RANKED_SOLO_5x5"
@@ -57,8 +115,11 @@ export const registerCommand = {
     } catch (error) {
       console.error("登録エラー:", error);
       await interaction.editReply({
-        embeds: [createErrorEmbed("登録に失敗しました")],
-        ephemeral: true,
+        embeds: [
+          createErrorEmbed(
+            "登録処理中にエラーが発生しました。しばらく経ってからもう一度お試しください。"
+          ),
+        ],
       });
     }
   },
@@ -69,21 +130,22 @@ export const registerCommand = {
 
 const createRegisterModal = () => {
   return new ModalBuilder()
-    .setCustomId("registerModal") // IDを明示的に設定
+    .setCustomId("registerModal")
     .setTitle("プレイヤー登録")
-
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
           .setCustomId("riotId")
           .setLabel("ゲーム名")
           .setStyle(TextInputStyle.Short)
+          .setRequired(true)
       ),
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()
           .setCustomId("tagline")
           .setLabel("タグライン（例: JP1）")
           .setStyle(TextInputStyle.Short)
+          .setRequired(true)
       )
     );
 };

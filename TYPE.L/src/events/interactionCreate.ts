@@ -3,12 +3,12 @@ import {
   aboutCommand,
   balanceCommand,
   historyCommand,
-  pingCommand,
   profileCommand,
   registerCommand,
   unregisterCommand,
 } from "../commands";
 import {
+  handleBalanceMethodSelect,
   handleEndGame,
   handleJoinGame,
   handleLaneSelect,
@@ -25,7 +25,6 @@ const commands = {
   profile: profileCommand,
   register: registerCommand,
   unregister: unregisterCommand,
-  ping: pingCommand,
   history: historyCommand,
 };
 
@@ -75,6 +74,12 @@ export const interactionCreate = async (interaction: any) => {
       if (action === "end") {
         return await handleEndGame(interaction, gameId);
       }
+    }
+
+    // balancemethod_GAME_IDの形式を処理
+    if (interaction.customId.startsWith("balancemethod_")) {
+      const gameId = interaction.customId.replace("balancemethod_", "");
+      return await handleBalanceMethodSelect(interaction, gameId);
     }
   }
 

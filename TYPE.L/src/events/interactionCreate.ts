@@ -2,7 +2,8 @@ import { InteractionType, MessageFlags } from "discord.js";
 import {
   aboutCommand,
   balanceCommand,
-  debugCommand, // debugCommandを追加
+  debugCommand,
+  helpCommand,
   historyCommand,
   profileCommand,
   registerCommand,
@@ -10,7 +11,7 @@ import {
   unregisterCommand,
 } from "../commands";
 import {
-  createNewCustomGame, // createNewCustomGameを追加
+  createNewCustomGame,
   handleBalanceMethodSelect,
   handleEndGame,
   handleEndTracking,
@@ -22,12 +23,13 @@ import {
   handleTrackGame,
   handleVoiceJoin,
 } from "../components/customGame";
-import { createErrorEmbed, createSuccessEmbed } from "../lib/embeds"; // createSuccessEmbedを追加
+import { createErrorEmbed, createSuccessEmbed } from "../lib/embeds";
 
 const commands = {
   about: aboutCommand,
   balance: balanceCommand,
-  debug: debugCommand, 
+  debug: debugCommand,
+  help: helpCommand,
   profile: profileCommand,
   register: registerCommand,
   unregister: unregisterCommand,
@@ -126,6 +128,16 @@ export const interactionCreate = async (interaction: any) => {
           ],
         });
       }
+    }
+
+    // StringSelectMenuのハンドリングを追加
+    if (interaction.isStringSelectMenu()) {
+      // help_select ハンドラーを追加
+      if (interaction.customId === "help_select") {
+        return await helpCommand.handleHelpSelect(interaction);
+      }
+
+      // 他のセレクトメニューハンドラー...
     }
   }
 

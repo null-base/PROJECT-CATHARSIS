@@ -183,3 +183,5 @@ tmp
 scratch*.{js,ts,tsx,cjs,mjs}
 
 *.bun-build
+TYPE.L/lol_custom_games.sqlite-shm
+TYPE.L/lol_custom_games.sqlite-wal

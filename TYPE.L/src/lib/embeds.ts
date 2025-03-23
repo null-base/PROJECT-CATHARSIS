@@ -4,11 +4,10 @@ import { BOT_DEVELOPER_ID, BOT_DEVELOPER_NAME, BOT_WEBSITE } from "./config";
 
 // フッター用の共通関数
 const addStandardFooter = (embed: EmbedBuilder) => {
-  return embed
-    .setFooter({
-      text: `Powered by @${BOT_DEVELOPER_NAME} • ${BOT_WEBSITE}`,
-      iconURL: `https://cdn.discordapp.com/avatars/${BOT_DEVELOPER_ID}/953d512ef19ef1e915fe733fa637b67e.webp`,
-    })
+  return embed.setFooter({
+    text: `Powered by @${BOT_DEVELOPER_NAME} • ${BOT_WEBSITE}`,
+    iconURL: `https://cdn.discordapp.com/avatars/${BOT_DEVELOPER_ID}/953d512ef19ef1e915fe733fa637b67e.webp`,
+  });
 };
 
 // チーム分け方法の表示名を取得する関数
@@ -231,4 +230,26 @@ export const createCustomBalanceEmbed = (
         }
       )
   );
+};
+
+// 警告用Embedを作成
+export const createWarningEmbed = (message: string) => {
+  return new EmbedBuilder()
+    .setColor(0xffaa00)
+    .setDescription(`⚠️ ${message}`)
+    .setFooter({
+      text: `Powered by @${BOT_DEVELOPER_NAME} • ${BOT_WEBSITE}`,
+      iconURL: `https://cdn.discordapp.com/avatars/${BOT_DEVELOPER_ID}/953d512ef19ef1e915fe733fa637b67e.webp`,
+    });
+};
+
+// 成功用Embedを作成
+export const createSuccessEmbed = (message: string) => {
+  return new EmbedBuilder()
+    .setColor(0x00ff00)
+    .setDescription(`✅ ${message}`)
+    .setFooter({
+      text: `Powered by @${BOT_DEVELOPER_NAME} • ${BOT_WEBSITE}`,
+      iconURL: `https://cdn.discordapp.com/avatars/${BOT_DEVELOPER_ID}/953d512ef19ef1e915fe733fa637b67e.webp`,
+    });
 };

@@ -3,7 +3,9 @@ config();
 
 export const DISCORD_TOKEN = process.env.DISCORD_TOKEN!;
 export const RIOT_API_KEY = process.env.RIOT_API_KEY!;
-export const GUILD_ID = process.env.GUILD_ID;
+export const DEV_GUILD_IDS = process.env.DEV_GUILD_IDS
+  ? process.env.DEV_GUILD_IDS.split(",").filter((id) => id.trim() !== "")
+  : [];
 
 // BOT情報
 export const BOT_VERSION = process.env.BOT_VERSION || "NULL";

@@ -1,5 +1,6 @@
+import { MessageFlags } from "discord.js";
 import { getPlayer } from "../db";
-import { getProfileIconUrl } from "../lib/ddragon";
+import { getChampionNameById, getProfileIconUrl } from "../lib/ddragon";
 import { createStandardEmbed } from "../lib/embedHelper";
 import { createErrorEmbed } from "../lib/embeds";
 import { RiotAPI } from "../lib/riotApi";
@@ -23,7 +24,7 @@ export const historyCommand = {
               "登録情報が見つかりません。`/register`で登録してください。"
             ),
           ],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -62,15 +63,16 @@ export const historyCommand = {
       let totalAssists = 0;
 
       // 各試合の詳細を追加
-      matches.forEach((match: any) => {
+      for (const match of matches) {
         const participant = match.info.participants.find(
           (p: any) => p.puuid === player.puuid
         );
 
-        if (!participant) return;
+        if (!participant) continue;
 
         const win = participant.win;
-        const champion = participant.championName;
+        // Promise を await する
+        const champion = await getChampionNameById(participant.championId);
         const kills = participant.kills;
         const deaths = participant.deaths;
         const assists = participant.assists;
@@ -100,7 +102,7 @@ export const historyCommand = {
           value: `${gameMode} (${gameDuration}分)\n${kills}/${deaths}/${assists} (KDA: ${kda}) CS: ${cs}`,
           inline: false,
         });
-      });
+      }
 
       const totalGames = matches.length;
       const winRate =
@@ -124,7 +126,7 @@ export const historyCommand = {
       console.error("試合履歴取得エラー:", error);
       await interaction.editReply({
         embeds: [createErrorEmbed("試合履歴の取得に失敗しました")],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

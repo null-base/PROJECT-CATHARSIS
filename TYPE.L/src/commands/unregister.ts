@@ -18,7 +18,7 @@ export const unregisterCommand = {
       if (result.changes === 0) {
         return interaction.editReply({
           embeds: [createErrorEmbed("登録情報が見つかりません")],
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -33,7 +33,7 @@ export const unregisterCommand = {
 
       await interaction.editReply({
         embeds: [successEmbed],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     } catch (error) {
       console.error("登録解除エラー:", error);
@@ -44,7 +44,7 @@ export const unregisterCommand = {
 
       await interaction.editReply({
         embeds: [errorEmbed],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

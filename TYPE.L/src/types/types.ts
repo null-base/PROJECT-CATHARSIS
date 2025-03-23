@@ -31,11 +31,15 @@ export type CommandHandler = {
 // カスタムゲーム関連の型定義
 export interface CustomGameData {
   game_id: string;
+  server_id: string;
   channel_id: string;
   message_id?: string;
   status: string;
   balance_method: string;
   created_at: number;
+  spectator_match_id?: string;
+  spectator_region?: string;
+  last_updated?: number;
 }
 
 export type ParticipantData = {

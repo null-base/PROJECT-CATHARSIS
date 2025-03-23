@@ -3,19 +3,26 @@ import type { CustomGameData, ParticipantData } from "../types/types";
 
 const db = new Database("lol_custom_games.sqlite");
 
-// テーブル作成 (カラム名をidからgame_idに変更)
-db.run(`
+// テーブル作成（既存のテーブルを削除して再作成）
+db.exec(`DROP TABLE IF EXISTS participants`);
+db.exec(`DROP TABLE IF EXISTS games`);
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS games (
     game_id TEXT PRIMARY KEY,
-    status TEXT DEFAULT 'LOBBY',
-    created_at INTEGER DEFAULT (unixepoch()),
-    channel_id TEXT,
+    server_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
     message_id TEXT,
-    balance_method TEXT DEFAULT 'random'
+    status TEXT DEFAULT 'WAITING',
+    balance_method TEXT DEFAULT 'random',
+    created_at INTEGER DEFAULT (strftime('%s', 'now')),
+    spectator_match_id TEXT,
+    spectator_region TEXT,
+    last_updated INTEGER
   )
 `);
 
-db.run(`
+db.exec(`
   CREATE TABLE IF NOT EXISTS participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     game_id TEXT,
@@ -35,7 +42,7 @@ db.run(`
 export const getGame = (gameId: string): CustomGameData | undefined => {
   return db
     .prepare(
-      "SELECT game_id, channel_id, message_id, status, balance_method, created_at FROM games WHERE game_id = ?"
+      "SELECT game_id, server_id, channel_id, message_id, status, balance_method, created_at, spectator_match_id, spectator_region, last_updated FROM games WHERE game_id = ?"
     )
     .get(gameId) as CustomGameData | undefined;
 };
@@ -43,12 +50,13 @@ export const getGame = (gameId: string): CustomGameData | undefined => {
 // ゲーム作成
 export const createGame = (
   gameId: string,
+  serverId: string,
   channelId: string,
   balanceMethod = "random"
 ) => {
   db.prepare(
-    "INSERT INTO games (game_id, channel_id, balance_method) VALUES (?, ?, ?)"
-  ).run(gameId, channelId, balanceMethod);
+    "INSERT INTO games (game_id, server_id, channel_id, balance_method) VALUES (?, ?, ?, ?)"
+  ).run(gameId, serverId, channelId, balanceMethod);
 };
 
 // メッセージID更新
@@ -142,6 +150,46 @@ export const isParticipant = (gameId: string, userId: string): boolean => {
   return !!result;
 };
 
+// 試合ID更新関数を追加
+export const updateGameSpectatorInfo = (
+  gameId: string,
+  matchId: string,
+  region: string
+): void => {
+  db.prepare(
+    "UPDATE games SET spectator_match_id = ?, spectator_region = ?, last_updated = ? WHERE game_id = ?"
+  ).run(matchId, region, Math.floor(Date.now() / 1000), gameId);
+};
+
+// アクティブなゲームを取得する関数
+export const getActiveGames = (): CustomGameData[] => {
+  return db
+    .prepare(
+      "SELECT * FROM games WHERE status IN ('WAITING', 'TRACKING') ORDER BY created_at DESC"
+    )
+    .all() as CustomGameData[];
+};
+
+// 古いゲームを削除する関数
+export const cleanupOldGames = (cutoffTime: number): number => {
+  // 削除対象のゲームIDを取得
+  const gameIds = db
+    .prepare("SELECT game_id FROM games WHERE created_at < ?")
+    .all(cutoffTime)
+    .map((row: any) => row.game_id);
+
+  // 参加者を削除
+  for (const gameId of gameIds) {
+    db.prepare("DELETE FROM participants WHERE game_id = ?").run(gameId);
+  }
+
+  // ゲームを削除
+  const result = db
+    .prepare("DELETE FROM games WHERE created_at < ?")
+    .run(cutoffTime);
+  return result.changes;
+};
+
 export const gameDB = {
   getGame,
   createGame,
@@ -154,4 +202,7 @@ export const gameDB = {
   updateParticipantTeam,
   getParticipants,
   isParticipant,
+  updateGameSpectatorInfo,
+  getActiveGames,
+  cleanupOldGames,
 };

@@ -63,11 +63,42 @@ export const RiotAPI = {
   },
 
   async getMatchDetails(matchId: string, region: string): Promise<any> {
-    const routingRegion = routingRegionMap[region];
-    const response = await axios.get(
-      `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${matchId}`,
-      { headers: { "X-Riot-Token": RIOT_API_KEY } }
-    );
+    const routingRegion = routingRegionMap[region] || region;
+    if (!routingRegion) {
+      throw new Error(`Invalid region: ${region}`);
+    }
+
+    const url = `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/${matchId}`;
+    console.log(`[RiotAPI] マッチ詳細取得: ${url}`);
+
+    const response = await axios.get(url, {
+      headers: { "X-Riot-Token": RIOT_API_KEY },
+    });
+    return response.data;
+  },
+
+  // 現在のアクティブゲーム情報を取得
+  async getActiveGame(region: string, puuid: string): Promise<any> {
+    const endpoint = `https://${region}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+    const response = await axios.get(endpoint, {
+      headers: { "X-Riot-Token": RIOT_API_KEY },
+    });
+    return response.data;
+  },
+
+  // getRecentMatchesメソッドを修正
+  async getRecentMatches(
+    puuid: string,
+    region: string,
+    count: number = 5
+  ): Promise<string[]> {
+    const routingRegion = routingRegionMap[region] || region;
+    const url = `https://${routingRegion}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
+    console.log(`[RiotAPI] 最近のマッチ取得: ${url}`);
+
+    const response = await axios.get(url, {
+      headers: { "X-Riot-Token": RIOT_API_KEY },
+    });
     return response.data;
   },
 };

@@ -1,5 +1,6 @@
 import { EmbedBuilder } from "discord.js";
 import { createErrorEmbed } from "../lib/embeds";
+import { addStandardFooter } from "../lib/embedHelper";
 
 export const pingCommand = {
   data: {
@@ -16,15 +17,12 @@ export const pingCommand = {
       const embed = new EmbedBuilder()
         .setColor(0x00ff00)
         .setTitle("🏓 Pong!")
-        .setFooter({
-          text: "Powered by @null_sensei • null-base.com",
-          iconURL:
-            "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-        })
         .addFields(
           { name: "📡 WebSocket Ping", value: `${latency}ms`, inline: true },
           { name: "⚡ API Latency", value: `${apiLatency}ms`, inline: true }
         );
+      // 標準フッターを追加
+      await addStandardFooter(embed, interaction.client);
 
       await interaction.reply({
         embeds: [embed],

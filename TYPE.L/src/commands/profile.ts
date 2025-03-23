@@ -1,7 +1,8 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 import { getPlayer, savePlayer } from "../db";
 import { processMatchStats } from "../lib/calculations";
 import { getProfileIconUrl } from "../lib/ddragon";
+import { addStandardFooter } from "../lib/embedHelper";
 import { createErrorEmbed, createProfileEmbed } from "../lib/embeds";
 import { RiotAPI } from "../lib/riotApi";
 import type { PlayerData } from "../types/types";
@@ -120,20 +121,16 @@ export const profileCommand = {
         },
         topChampions,
         topLanes,
-      })
-        .setThumbnail(iconUrl)
-        .setFooter({
-          text: "Powered by @null_sensei • null-base.com",
-          iconURL:
-            "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-        });
+      }).setThumbnail(iconUrl);
+      // 標準フッターを追加
+      await addStandardFooter(embed, interaction.client);
 
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error("プロフィール取得エラー:", error);
       await interaction.editReply({
         embeds: [createErrorEmbed("プロフィールの取得に失敗しました")],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral
       });
     }
   },

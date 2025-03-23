@@ -1,4 +1,4 @@
-import { EmbedBuilder, MessageFlags, PermissionFlagsBits } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 import { getAllPlayers } from "../db";
 import { gameDB } from "../db/gameDB";
 import { BOT_DEVELOPER_ID } from "../lib/config";
@@ -36,19 +36,7 @@ export const debugCommand = {
           },
         ],
       },
-      {
-        name: "cleanup",
-        description: "古いカスタムゲームを削除",
-        type: 1,
-        options: [
-          {
-            name: "days",
-            description: "何日前のゲームを削除するか",
-            type: 4, // INTEGER
-            required: false,
-          },
-        ],
-      },
+      // cleanupサブコマンドを削除
       {
         name: "forcekill",
         description: "追跡中のゲームを強制終了",
@@ -231,36 +219,6 @@ export const debugCommand = {
       }
     }
 
-    // cleanup サブコマンド
-    if (subcommand === "cleanup") {
-      await interaction.deferReply();
-
-      try {
-        const days = interaction.options.getInteger("days") || 7; // デフォルトは7日前
-
-        // 現在時刻から指定日数前のUNIXタイムスタンプを計算
-        const cutoffTime = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
-
-        // DBから古いゲームを削除する関数を呼び出し
-        const deletedCount = await cleanupOldGames(cutoffTime);
-
-        return await interaction.editReply({
-          embeds: [
-            createSuccessEmbed(
-              `${days}日以上前の古いゲーム ${deletedCount} 件を削除しました`
-            ),
-          ],
-        });
-      } catch (error) {
-        console.error("クリーンアップエラー:", error);
-        return await interaction.editReply({
-          embeds: [
-            createErrorEmbed("古いゲームの削除中にエラーが発生しました"),
-          ],
-        });
-      }
-    }
-
     // forcekill サブコマンド
     if (subcommand === "forcekill") {
       await interaction.deferReply();
@@ -430,9 +388,6 @@ async function getActiveGames(): Promise<any[]> {
   return gameDB.getActiveGames();
 }
 
-// 古いゲームを削除する関数
-async function cleanupOldGames(cutoffTime: number): Promise<number> {
-  return gameDB.cleanupOldGames(cutoffTime);
-}
+// cleanupOldGames関数も削除
 
 export default debugCommand;

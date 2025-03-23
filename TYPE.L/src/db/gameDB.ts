@@ -1,50 +1,181 @@
 import { Database } from "bun:sqlite";
-import type { ChampionStats, CustomGameData, GameHistory, ParticipantData } from "../types/types";
+import fs from "fs";
+import type {
+  ChampionStats,
+  CustomGameData,
+  GameHistory,
+  ParticipantData,
+} from "../types/types";
 
-const db = new Database("lol_custom_games.sqlite");
+// データベースファイルのパス
+const DB_PATH = "lol_custom_games.sqlite";
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS game_results (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game_id TEXT NOT NULL,
-    server_id TEXT NOT NULL,
-    match_id TEXT NOT NULL,
-    blue_team_win BOOLEAN NOT NULL,
-    played_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-    game_duration INTEGER,
-    FOREIGN KEY(game_id) REFERENCES games(game_id),
-    UNIQUE(match_id)
-  )
-`);
+// 古いDBが存在する場合は削除して新規作成
+if (fs.existsSync(DB_PATH)) {
+  fs.unlinkSync(DB_PATH);
+}
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS player_game_results (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    game_id TEXT NOT NULL,
-    server_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    match_id TEXT NOT NULL,
-    champion_id INTEGER,
-    champion_name TEXT,
-    team TEXT NOT NULL,
-    position TEXT,
-    win BOOLEAN NOT NULL,
-    kills INTEGER DEFAULT 0,
-    deaths INTEGER DEFAULT 0,
-    assists INTEGER DEFAULT 0,
-    FOREIGN KEY(game_id) REFERENCES games(game_id),
-    UNIQUE(match_id, user_id)
-  )
-`);
+// データベース接続
+const db = new Database(DB_PATH);
 
-// ゲーム取得
-export const getGame = (gameId: string): CustomGameData | undefined => {
-  return db
-    .prepare(
-      "SELECT game_id, server_id, channel_id, message_id, status, balance_method, created_at, spectator_match_id, spectator_region, last_updated FROM games WHERE game_id = ?"
-    )
-    .get(gameId) as CustomGameData | undefined;
+// SQLiteのパフォーマンス設定
+db.exec("PRAGMA journal_mode = WAL;"); // Write-Ahead Logging モード
+db.exec("PRAGMA synchronous = NORMAL;"); // 同期レベル最適化
+db.exec("PRAGMA foreign_keys = ON;"); // 外部キー制約を有効化
+
+// データベース初期化（テーブル作成）
+function initDatabase() {
+  console.log("データベース構造を最適化して初期化します");
+
+  try {
+    // サーバーテーブル - サーバー情報を正規化
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS servers (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        first_seen INTEGER DEFAULT (strftime('%s', 'now')),
+        last_active INTEGER DEFAULT (strftime('%s', 'now'))
+      )
+    `);
+
+    // ユーザーテーブル - 参加ユーザーを正規化
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS game_users (
+        user_id TEXT PRIMARY KEY,
+        riot_id TEXT NOT NULL,
+        tagline TEXT NOT NULL,
+        puuid TEXT UNIQUE,
+        first_seen INTEGER DEFAULT (strftime('%s', 'now')),
+        last_active INTEGER DEFAULT (strftime('%s', 'now'))
+      )
+    `);
+
+    // ゲームテーブル - カスタムゲーム情報
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS games (
+        id TEXT PRIMARY KEY,
+        server_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT,
+        status TEXT NOT NULL DEFAULT 'WAITING',
+        balance_method TEXT NOT NULL DEFAULT 'random',
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        finished_at INTEGER,
+        match_id TEXT,
+        match_region TEXT,
+        FOREIGN KEY(server_id) REFERENCES servers(id)
+      )
+    `);
+
+    // ゲームに対する参加者テーブル
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS participants (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        lane TEXT NOT NULL DEFAULT 'FILL',
+        team TEXT DEFAULT NULL,
+        joined_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE,
+        FOREIGN KEY(user_id) REFERENCES game_users(user_id),
+        UNIQUE(game_id, user_id)
+      )
+    `);
+
+    // 試合結果テーブル
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS match_results (
+        match_id TEXT PRIMARY KEY,
+        game_id TEXT NOT NULL,
+        match_duration INTEGER NOT NULL,
+        blue_team_win INTEGER NOT NULL,
+        played_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY(game_id) REFERENCES games(id) ON DELETE CASCADE
+      )
+    `);
+
+    // プレイヤーパフォーマンステーブル
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS player_performances (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        match_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        champion_id INTEGER NOT NULL,
+        champion_name TEXT NOT NULL,
+        team TEXT NOT NULL,
+        position TEXT,
+        kills INTEGER NOT NULL DEFAULT 0,
+        deaths INTEGER NOT NULL DEFAULT 0,
+        assists INTEGER NOT NULL DEFAULT 0,
+        gold_earned INTEGER,
+        vision_score INTEGER,
+        cs INTEGER,
+        win INTEGER NOT NULL,
+        FOREIGN KEY(match_id) REFERENCES match_results(match_id) ON DELETE CASCADE,
+        FOREIGN KEY(user_id) REFERENCES game_users(user_id),
+        UNIQUE(match_id, user_id)
+      )
+    `);
+
+    // インデックス追加
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_games_server_id ON games(server_id);"
+    );
+    db.exec("CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);");
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_games_created_at ON games(created_at);"
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_participants_game_id ON participants(game_id);"
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_participants_user_id ON participants(user_id);"
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_performances_user_id ON player_performances(user_id);"
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_match_results_game_id ON match_results(game_id);"
+    );
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_player_performances_champion ON player_performances(champion_id, champion_name);"
+    );
+
+    // テーブル作成の確認
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all();
+    console.log(
+      `作成されたテーブル: ${tables.map((t: any) => t.name).join(", ")}`
+    );
+
+    console.log("データベース構造の最適化が完了しました");
+  } catch (error) {
+    console.error("データベース初期化エラー:", error);
+    throw error;
+  }
+}
+
+// データベース初期化を実行
+initDatabase();
+
+// === サーバー関連の関数 ===
+
+// サーバー情報を登録/更新
+export const registerServer = (serverId: string, serverName: string): void => {
+  db.prepare(
+    `
+    INSERT INTO servers (id, name, last_active)
+    VALUES (?, ?, strftime('%s', 'now'))
+    ON CONFLICT (id) DO UPDATE SET
+      name = ?,
+      last_active = strftime('%s', 'now')
+  `
+  ).run(serverId, serverName, serverName);
 };
+
+// === ゲーム関連の関数 ===
 
 // ゲーム作成
 export const createGame = (
@@ -52,26 +183,66 @@ export const createGame = (
   serverId: string,
   channelId: string,
   balanceMethod = "random"
-) => {
+): void => {
+  // サーバーが存在しない場合は追加（名前は後で更新可能）
   db.prepare(
-    "INSERT INTO games (game_id, server_id, channel_id, balance_method) VALUES (?, ?, ?, ?)"
+    `
+    INSERT OR IGNORE INTO servers (id) VALUES (?)
+  `
+  ).run(serverId);
+
+  db.prepare(
+    `
+    INSERT INTO games (
+      id, server_id, channel_id, balance_method
+    ) VALUES (?, ?, ?, ?)
+  `
   ).run(gameId, serverId, channelId, balanceMethod);
+};
+
+// ゲーム取得
+export const getGame = (gameId: string): CustomGameData | undefined => {
+  return db
+    .prepare(
+      `
+      SELECT
+        id as game_id,
+        server_id,
+        channel_id,
+        message_id,
+        status,
+        balance_method,
+        created_at,
+        match_id as spectator_match_id,
+        match_region as spectator_region,
+        updated_at as last_updated
+      FROM games
+      WHERE id = ?
+    `
+    )
+    .get(gameId) as CustomGameData | undefined;
 };
 
 // メッセージID更新
 export const updateGameMessage = (gameId: string, messageId: string): void => {
-  db.prepare("UPDATE games SET message_id = ? WHERE game_id = ?").run(
-    messageId,
-    gameId
-  );
+  db.prepare(
+    `
+    UPDATE games SET
+      message_id = ?,
+      updated_at = strftime('%s', 'now')
+    WHERE id = ?
+  `
+  ).run(messageId, gameId);
 };
 
 // ゲームステータス更新
 export const updateGameStatus = (gameId: string, status: string): void => {
-  db.prepare("UPDATE games SET status = ? WHERE game_id = ?").run(
-    status,
-    gameId
-  );
+  const query =
+    status === "COMPLETED"
+      ? `UPDATE games SET status = ?, updated_at = strftime('%s', 'now'), finished_at = strftime('%s', 'now') WHERE id = ?`
+      : `UPDATE games SET status = ?, updated_at = strftime('%s', 'now') WHERE id = ?`;
+
+  db.prepare(query).run(status, gameId);
 };
 
 // バランス方法を更新する関数
@@ -79,26 +250,111 @@ export const updateGameBalanceMethod = (
   gameId: string,
   method: string
 ): void => {
-  db.prepare("UPDATE games SET balance_method = ? WHERE game_id = ?").run(
-    method,
-    gameId
-  );
+  db.prepare(
+    `
+    UPDATE games SET
+      balance_method = ?,
+      updated_at = strftime('%s', 'now')
+    WHERE id = ?
+  `
+  ).run(method, gameId);
+};
+
+// 試合ID更新関数
+export const updateGameSpectatorInfo = (
+  gameId: string,
+  matchId: string,
+  region: string
+): void => {
+  db.prepare(
+    `
+    UPDATE games SET
+      match_id = ?,
+      match_region = ?,
+      updated_at = strftime('%s', 'now')
+    WHERE id = ?
+  `
+  ).run(matchId, region, gameId);
+};
+
+// アクティブなゲームを取得する関数
+export const getActiveGames = (): CustomGameData[] => {
+  try {
+    return db
+      .prepare(
+        `
+        SELECT
+          id as game_id,
+          server_id,
+          channel_id,
+          message_id,
+          status,
+          balance_method,
+          created_at,
+          match_id as spectator_match_id,
+          match_region as spectator_region,
+          updated_at as last_updated
+        FROM games
+        WHERE status IN ('WAITING', 'TRACKING')
+        ORDER BY created_at DESC
+      `
+      )
+      .all() as CustomGameData[];
+  } catch (error) {
+    console.error("アクティブゲーム取得エラー:", error);
+    return [];
+  }
+};
+
+// 古いゲームを削除する関数
+export const cleanupOldGames = (cutoffTime: number): number => {
+  return db.prepare("DELETE FROM games WHERE created_at < ?").run(cutoffTime)
+    .changes;
+};
+
+// === 参加者関連の関数 ===
+
+// プレイヤー登録（ゲームユーザー）
+export const registerGameUser = (
+  userId: string,
+  puuid: string | null,
+  riotId: string,
+  tagline: string
+): void => {
+  db.prepare(
+    `
+    INSERT INTO game_users (
+      user_id, puuid, riot_id, tagline, last_active
+    ) VALUES (?, ?, ?, ?, strftime('%s', 'now'))
+    ON CONFLICT (user_id) DO UPDATE SET
+      puuid = COALESCE(?, puuid),
+      riot_id = ?,
+      tagline = ?,
+      last_active = strftime('%s', 'now')
+  `
+  ).run(userId, puuid, riotId, tagline, puuid, riotId, tagline);
 };
 
 // 参加者追加
 export const addParticipant = (
   gameId: string,
   userId: string,
-  puuid: string,
+  puuid: string | null,
   riotId: string,
-  tagline: string,
-  strength: number
+  tagline: string
 ): void => {
+  // まずユーザーを登録
+  registerGameUser(userId, puuid, riotId, tagline);
+
+  // 参加者として追加
   db.prepare(
-    `INSERT INTO participants (
-      game_id, user_id, puuid, riot_id, tagline, strength
-    ) VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(gameId, userId, puuid, riotId, tagline, strength);
+    `
+    INSERT INTO participants (
+      game_id, user_id
+    ) VALUES (?, ?)
+    ON CONFLICT (game_id, user_id) DO NOTHING
+  `
+  ).run(gameId, userId);
 };
 
 // 参加者削除
@@ -123,7 +379,7 @@ export const updateParticipantLane = (
   return result.changes > 0;
 };
 
-// チーム更新（strength パラメータは不要だが、DB構造との互換性のため残します）
+// チーム更新
 export const updateParticipantTeam = (
   gameId: string,
   userId: string,
@@ -137,7 +393,21 @@ export const updateParticipantTeam = (
 // ゲーム参加者取得
 export const getParticipants = (gameId: string): ParticipantData[] => {
   return db
-    .prepare("SELECT * FROM participants WHERE game_id = ?")
+    .prepare(
+      `
+      SELECT
+        p.user_id,
+        u.puuid,
+        u.riot_id,
+        u.tagline,
+        p.lane,
+        p.team,
+        0 as strength
+      FROM participants p
+      JOIN game_users u ON p.user_id = u.user_id
+      WHERE p.game_id = ?
+    `
+    )
     .all(gameId) as ParticipantData[];
 };
 
@@ -149,165 +419,162 @@ export const isParticipant = (gameId: string, userId: string): boolean => {
   return !!result;
 };
 
-// 試合ID更新関数を追加
-export const updateGameSpectatorInfo = (
-  gameId: string,
-  matchId: string,
-  region: string
-): void => {
-  db.prepare(
-    "UPDATE games SET spectator_match_id = ?, spectator_region = ?, last_updated = ? WHERE game_id = ?"
-  ).run(matchId, region, Math.floor(Date.now() / 1000), gameId);
-};
-
-// アクティブなゲームを取得する関数
-export const getActiveGames = (): CustomGameData[] => {
-  return db
-    .prepare(
-      "SELECT * FROM games WHERE status IN ('WAITING', 'TRACKING') ORDER BY created_at DESC"
-    )
-    .all() as CustomGameData[];
-};
-
-// 古いゲームを削除する関数
-export const cleanupOldGames = (cutoffTime: number): number => {
-  // 削除対象のゲームIDを取得
-  const gameIds = db
-    .prepare("SELECT game_id FROM games WHERE created_at < ?")
-    .all(cutoffTime)
-    .map((row: any) => row.game_id);
-
-  // 参加者を削除
-  for (const gameId of gameIds) {
-    db.prepare("DELETE FROM participants WHERE game_id = ?").run(gameId);
-  }
-
-  // ゲームを削除
-  const result = db
-    .prepare("DELETE FROM games WHERE created_at < ?")
-    .run(cutoffTime);
-  return result.changes;
-};
+// === 試合結果関連の関数 ===
 
 // ゲーム結果を保存
 export const saveGameResult = (
   gameId: string,
-  serverId: string,
   matchId: string,
   blueTeamWin: boolean,
   gameDuration: number
 ): void => {
   db.prepare(
-    `INSERT OR REPLACE INTO game_results (
-      game_id, server_id, match_id, blue_team_win, game_duration
-    ) VALUES (?, ?, ?, ?, ?)`
-  ).run(gameId, serverId, matchId, blueTeamWin ? 1 : 0, gameDuration);
+    `
+    INSERT OR REPLACE INTO match_results (
+      match_id, game_id, match_duration, blue_team_win, played_at
+    ) VALUES (?, ?, ?, ?, strftime('%s', 'now'))
+  `
+  ).run(matchId, gameId, gameDuration, blueTeamWin ? 1 : 0);
+
+  // ゲームを完了状態に
+  updateGameStatus(gameId, "COMPLETED");
 };
 
 // プレイヤーのゲーム結果を保存
 export const savePlayerGameResult = (
-  gameId: string,
-  serverId: string,
-  userId: string,
   matchId: string,
+  userId: string,
   championId: number,
   championName: string,
   team: string,
-  position: string,
+  position: string | null,
   win: boolean,
   kills: number,
   deaths: number,
-  assists: number
+  assists: number,
+  goldEarned: number | null = null,
+  visionScore: number | null = null,
+  cs: number | null = null
 ): void => {
   db.prepare(
-    `INSERT OR REPLACE INTO player_game_results (
-      game_id, server_id, user_id, match_id, champion_id, champion_name,
-      team, position, win, kills, deaths, assists
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `
+    INSERT OR REPLACE INTO player_performances (
+      match_id, user_id, champion_id, champion_name, team, position,
+      kills, deaths, assists, gold_earned, vision_score, cs, win
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `
   ).run(
-    gameId,
-    serverId,
-    userId,
     matchId,
+    userId,
     championId,
     championName,
     team,
     position,
-    win ? 1 : 0,
     kills,
     deaths,
-    assists
+    assists,
+    goldEarned,
+    visionScore,
+    cs,
+    win ? 1 : 0
   );
 };
 
+// === 統計関連の関数 ===
+
 // サーバーのゲーム統計を取得
 export const getServerGameStats = (serverId: string) => {
+  const totalGamesQuery = db
+    .prepare(
+      `
+      SELECT COUNT(*) as count
+      FROM match_results r
+      JOIN games g ON r.game_id = g.id
+      WHERE g.server_id = ?
+    `
+    )
+    .get(serverId) as { count: number };
+
+  const blueWinsQuery = db
+    .prepare(
+      `
+      SELECT COUNT(*) as count
+      FROM match_results r
+      JOIN games g ON r.game_id = g.id
+      WHERE g.server_id = ? AND r.blue_team_win = 1
+    `
+    )
+    .get(serverId) as { count: number };
+
+  const redWinsQuery = db
+    .prepare(
+      `
+      SELECT COUNT(*) as count
+      FROM match_results r
+      JOIN games g ON r.game_id = g.id
+      WHERE g.server_id = ? AND r.blue_team_win = 0
+    `
+    )
+    .get(serverId) as { count: number };
+
   return {
-    totalGames: (
-      db
-        .prepare(
-          "SELECT COUNT(*) as count FROM game_results WHERE server_id = ?"
-        )
-        .get(serverId) as { count: number }
-    ).count,
-    blueWins: (
-      db
-        .prepare(
-          "SELECT COUNT(*) as count FROM game_results WHERE server_id = ? AND blue_team_win = 1"
-        )
-        .get(serverId) as { count: number }
-    ).count,
-    redWins: (
-      db
-        .prepare(
-          "SELECT COUNT(*) as count FROM game_results WHERE server_id = ? AND blue_team_win = 0"
-        )
-        .get(serverId) as { count: number }
-    ).count,
+    totalGames: totalGamesQuery.count,
+    blueWins: blueWinsQuery.count,
+    redWins: redWinsQuery.count,
   };
 };
 
 // プレイヤーの戦績を取得
 export const getPlayerStats = (serverId: string, userId: string) => {
+  const gamesQuery = db
+    .prepare(
+      `
+      SELECT COUNT(*) as count
+      FROM player_performances pp
+      JOIN match_results mr ON pp.match_id = mr.match_id
+      JOIN games g ON mr.game_id = g.id
+      WHERE g.server_id = ? AND pp.user_id = ?
+    `
+    )
+    .get(serverId, userId) as { count: number };
+
+  const winsQuery = db
+    .prepare(
+      `
+      SELECT COUNT(*) as count
+      FROM player_performances pp
+      JOIN match_results mr ON pp.match_id = mr.match_id
+      JOIN games g ON mr.game_id = g.id
+      WHERE g.server_id = ? AND pp.user_id = ? AND pp.win = 1
+    `
+    )
+    .get(serverId, userId) as { count: number };
+
+  const statsQuery = db
+    .prepare(
+      `
+      SELECT
+        SUM(pp.kills) as kills,
+        SUM(pp.deaths) as deaths,
+        SUM(pp.assists) as assists
+      FROM player_performances pp
+      JOIN match_results mr ON pp.match_id = mr.match_id
+      JOIN games g ON mr.game_id = g.id
+      WHERE g.server_id = ? AND pp.user_id = ?
+    `
+    )
+    .get(serverId, userId) as {
+    kills: number | null;
+    deaths: number | null;
+    assists: number | null;
+  };
+
   return {
-    games: (
-      db
-        .prepare(
-          "SELECT COUNT(*) as count FROM player_game_results WHERE server_id = ? AND user_id = ?"
-        )
-        .get(serverId, userId) as { count: number }
-    ).count,
-    wins: (
-      db
-        .prepare(
-          "SELECT COUNT(*) as count FROM player_game_results WHERE server_id = ? AND user_id = ? AND win = 1"
-        )
-        .get(serverId, userId) as { count: number }
-    ).count,
-    kills:
-      (
-        db
-          .prepare(
-            "SELECT SUM(kills) as sum FROM player_game_results WHERE server_id = ? AND user_id = ?"
-          )
-          .get(serverId, userId) as { sum: number | null }
-      ).sum || 0,
-    deaths:
-      (
-        db
-          .prepare(
-            "SELECT SUM(deaths) as sum FROM player_game_results WHERE server_id = ? AND user_id = ?"
-          )
-          .get(serverId, userId) as { sum: number | null }
-      ).sum || 0,
-    assists:
-      (
-        db
-          .prepare(
-            "SELECT SUM(assists) as sum FROM player_game_results WHERE server_id = ? AND user_id = ?"
-          )
-          .get(serverId, userId) as { sum: number | null }
-      ).sum || 0,
+    games: gamesQuery.count,
+    wins: winsQuery.count,
+    kills: statsQuery.kills || 0,
+    deaths: statsQuery.deaths || 0,
+    assists: statsQuery.assists || 0,
   };
 };
 
@@ -319,18 +586,22 @@ export const getPlayerTopChampions = (
 ): ChampionStats[] => {
   return db
     .prepare(
-      `SELECT
+      `
+      SELECT
         champion_name,
         COUNT(*) as games,
         SUM(CASE WHEN win = 1 THEN 1 ELSE 0 END) as wins,
         SUM(kills) as kills,
         SUM(deaths) as deaths,
         SUM(assists) as assists
-      FROM player_game_results
-      WHERE server_id = ? AND user_id = ?
+      FROM player_performances pp
+      JOIN match_results mr ON pp.match_id = mr.match_id
+      JOIN games g ON mr.game_id = g.id
+      WHERE g.server_id = ? AND pp.user_id = ?
       GROUP BY champion_id
-      ORDER BY games DESC
-      LIMIT ?`
+      ORDER BY games DESC, wins DESC
+      LIMIT ?
+    `
     )
     .all(serverId, userId, limit) as ChampionStats[];
 };
@@ -342,15 +613,25 @@ export const getServerGameHistory = (
 ): GameHistory[] => {
   return db
     .prepare(
-      `SELECT * FROM game_results
-      WHERE server_id = ?
-      ORDER BY played_at DESC
-      LIMIT ?`
+      `
+      SELECT
+        mr.match_id,
+        g.id as game_id,
+        g.server_id,
+        mr.blue_team_win,
+        mr.played_at,
+        mr.match_duration as game_duration
+      FROM match_results mr
+      JOIN games g ON mr.game_id = g.id
+      WHERE g.server_id = ?
+      ORDER BY mr.played_at DESC
+      LIMIT ?
+    `
     )
     .all(serverId, limit) as GameHistory[];
 };
 
-// gameDBオブジェクトに新しい関数を追加
+// gameDBオブジェクトにエクスポート
 export const gameDB = {
   getGame,
   createGame,
@@ -372,4 +653,6 @@ export const gameDB = {
   getPlayerStats,
   getPlayerTopChampions,
   getServerGameHistory,
+  registerServer,
+  registerGameUser,
 };

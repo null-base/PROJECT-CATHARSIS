@@ -17,7 +17,6 @@ export const debugCommand = {
   data: {
     name: "debug",
     description: "開発者用デバッグ機能",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString(),
     options: [
       {
         name: "status",
@@ -72,13 +71,10 @@ export const debugCommand = {
   },
 
   execute: async (interaction: any) => {
-    // 開発者・管理者チェック
-    if (
-      !isDeveloper(interaction.user.id) &&
-      !interaction.memberPermissions.has(PermissionFlagsBits.Administrator)
-    ) {
+    // 開発者チェック（管理者チェックを削除）
+    if (!isDeveloper(interaction.user.id)) {
       return interaction.reply({
-        embeds: [createErrorEmbed("このコマンドは管理者のみが使用できます")],
+        embeds: [createErrorEmbed("このコマンドは開発者のみが使用できます")],
         flags: MessageFlags.Ephemeral,
       });
     }

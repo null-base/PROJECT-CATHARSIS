@@ -697,78 +697,6 @@ function trackGameStatus(
   return stopTracking;
 }
 
-// UI更新関数
-async function updateGameUI(interaction: any, gameId: string, gameData: any) {
-  try {
-    const game = gameDB.getGame(gameId);
-    if (!game) {
-      return;
-    }
-
-    // チャンネルとメッセージを取得
-    const channel = await interaction.client.channels.fetch(game.channel_id);
-    if (!channel || channel.type !== ChannelType.GuildText) {
-      return;
-    }
-
-    const message = await channel.messages.fetch(game.message_id);
-    if (!message || !message.embeds || message.embeds.length === 0) {
-      return;
-    }
-
-    // 経過時間のフォーマット
-    const timeStr = formatGameTime(gameData.gameLength);
-
-    // 新しいEmbedを作成
-    const originalEmbed = message.embeds[0];
-    const newEmbed = new EmbedBuilder()
-      .setColor(originalEmbed.color || 0x0099ff)
-      .setTitle(originalEmbed.title || "🔴 試合進行中")
-      .setDescription(originalEmbed.description || "")
-      .setFooter(originalEmbed.footer || null);
-
-    // 既存のフィールドをコピーし、経過時間フィールドだけ置き換える
-    const fields = [...(originalEmbed.fields || [])];
-
-    // 経過時間フィールドのインデックスを探す
-    const timeFieldIndex = fields.findIndex(
-      (field) => field.name === "経過時間"
-    );
-
-    if (timeFieldIndex !== -1) {
-      // 既存のフィールドを更新
-      fields[timeFieldIndex] = {
-        name: "経過時間",
-        value: timeStr,
-        inline: true,
-      };
-    } else {
-      // なければ適切な位置に追加
-      fields.splice(2, 0, {
-        name: "経過時間",
-        value: timeStr,
-        inline: true,
-      });
-    }
-
-    // 更新されたフィールドをEmbedに設定
-    for (const field of fields) {
-      newEmbed.addFields(field);
-    }
-
-    // メッセージを更新
-    try {
-      await message.edit({
-        embeds: [newEmbed],
-      });
-    } catch (error) {
-      console.error(`[updateGameUI] メッセージ更新エラー:`, error);
-    }
-  } catch (error) {
-    console.error(`[updateGameUI] UI更新エラー:`, error);
-  }
-}
-
 // 試合結果表示
 export async function displayGameResult(interaction: any, gameId: string) {
   try {
@@ -1116,6 +1044,121 @@ export async function displayGameResult(interaction: any, gameId: string) {
 
       // ゲームステータスを完了に更新
       gameDB.updateGameStatus(gameId, "COMPLETED");
+
+      // ゲーム結果をデータベースに保存
+      try {
+        const blueTeamWin = blueTeam.win;
+        const gameDuration = matchDetails.info.gameDuration;
+
+        // ゲーム全体の結果を保存
+        gameDB.saveGameResult(
+          gameId,
+          game.server_id,
+          matchId,
+          blueTeamWin,
+          gameDuration
+        );
+
+        // 各プレイヤーの結果を保存
+        for (const participant of matchDetails.info.participants) {
+          // 変数を再計算
+          const champName = await getChampionNameById(participant.championId);
+
+          // プレイヤー情報を特定
+          let playerInfo = null;
+
+          // 1. PUUIDによるマッチング
+          if (participant.puuid && participantsMap.has(participant.puuid)) {
+            playerInfo = participantsMap.get(participant.puuid);
+          }
+          // 2. サモナー名によるマッチング
+          else if (participant.summonerName) {
+            const normalizedName = participant.summonerName
+              .toLowerCase()
+              .replace(/\s+/g, "");
+            if (summNameMap.has(normalizedName)) {
+              playerInfo = summNameMap.get(normalizedName);
+            }
+          }
+
+          // 3. レーン情報に基づくマッチング
+          if (
+            !playerInfo &&
+            (participant.teamId === 100 || participant.teamId === 200)
+          ) {
+            const teamLetter = participant.teamId === 100 ? "A" : "B";
+            const teamPlayers = botParticipants.filter(
+              (p) => p.team === teamLetter
+            );
+
+            if (participant.lane && teamPlayers.length > 0) {
+              const lanePlayer = teamPlayers.find((p) => {
+                const pLane = p.lane?.toUpperCase() || "FILL";
+                let participantLane = participant.lane.toUpperCase();
+
+                if (
+                  participantLane === "BOTTOM" &&
+                  participant.role?.includes("SUPPORT")
+                ) {
+                  participantLane = "SUPPORT";
+                }
+
+                return pLane === participantLane || pLane === "FILL";
+              });
+
+              if (lanePlayer) {
+                playerInfo = {
+                  user_id: lanePlayer.user_id,
+                  riot_id: lanePlayer.riot_id,
+                  tagline: lanePlayer.tagline,
+                };
+              }
+            }
+          }
+
+          // プレイヤー情報が特定できた場合のみDBに保存
+          if (playerInfo && playerInfo.user_id) {
+            try {
+              gameDB.savePlayerGameResult(
+                gameId,
+                game.server_id,
+                playerInfo.user_id,
+                matchId,
+                participant.championId,
+                champName,
+                participant.teamId === 100 ? "BLUE" : "RED",
+                participant.lane || "UNKNOWN",
+                participant.win,
+                participant.kills,
+                participant.deaths,
+                participant.assists
+              );
+
+              console.log(
+                `[displayGameResult] プレイヤー ${playerInfo.riot_id}#${playerInfo.tagline} の結果を保存しました`
+              );
+            } catch (playerError) {
+              console.error(
+                `[displayGameResult] プレイヤー結果保存エラー:`,
+                playerError
+              );
+            }
+          } else {
+            console.log(
+              `[displayGameResult] プレイヤー情報が特定できないため結果を保存しません: ${
+                participant.summonerName || "不明"
+              }`
+            );
+          }
+        }
+
+        console.log(
+          `[displayGameResult] ゲームID:${gameId}の結果をデータベースに保存しました`
+        );
+      } catch (dbError) {
+        console.error("[displayGameResult] ゲーム結果保存エラー:", dbError);
+        // 結果表示は続行
+      }
 
       return true;
     } catch (apiError) {

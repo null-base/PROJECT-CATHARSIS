@@ -6,6 +6,7 @@ import {
   historyCommand,
   profileCommand,
   registerCommand,
+  statsCommand,
   unregisterCommand,
 } from "../commands";
 import {
@@ -26,11 +27,12 @@ import { createErrorEmbed, createSuccessEmbed } from "../lib/embeds"; // createS
 const commands = {
   about: aboutCommand,
   balance: balanceCommand,
-  debug: debugCommand, // 追加
+  debug: debugCommand, 
   profile: profileCommand,
   register: registerCommand,
   unregister: unregisterCommand,
   history: historyCommand,
+  stats: statsCommand,
 };
 
 export const interactionCreate = async (interaction: any) => {

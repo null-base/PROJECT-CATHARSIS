@@ -53,3 +53,24 @@ export type ParticipantData = {
   team: string;
   strength: number;
 };
+
+// チャンピオン統計情報の型定義
+export interface ChampionStats {
+  champion_name: string;
+  games: number;
+  wins: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+}
+
+// ゲーム履歴の型定義
+export interface GameHistory {
+  id?: number;
+  game_id: string;
+  server_id: string;
+  match_id: string;
+  blue_team_win: number; // SQLiteではboolean型はnumber(0/1)として扱われる
+  played_at: number;
+  game_duration: number;
+}

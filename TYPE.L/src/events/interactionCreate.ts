@@ -1,7 +1,7 @@
 import { InteractionType, MessageFlags } from "discord.js";
 import {
   aboutCommand,
-  balanceCommand,
+  customCommand,
   debugCommand,
   helpCommand,
   historyCommand,
@@ -27,7 +27,7 @@ import { createErrorEmbed, createSuccessEmbed } from "../lib/embeds";
 
 const commands = {
   about: aboutCommand,
-  balance: balanceCommand,
+  custom: customCommand,
   debug: debugCommand,
   help: helpCommand,
   profile: profileCommand,

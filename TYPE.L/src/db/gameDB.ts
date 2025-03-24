@@ -10,11 +10,6 @@ import type {
 // データベースファイルのパス
 const DB_PATH = "lol_custom_games.sqlite";
 
-// 古いDBが存在する場合は削除して新規作成
-if (fs.existsSync(DB_PATH)) {
-  fs.unlinkSync(DB_PATH);
-}
-
 // データベース接続
 const db = new Database(DB_PATH);
 

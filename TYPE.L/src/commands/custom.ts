@@ -1,9 +1,9 @@
 import { createNewCustomGame } from "../components/customGame";
 import { createErrorEmbed, createSuccessEmbed } from "../lib/embeds";
 
-export const balanceCommand = {
+export const customCommand = {
   data: {
-    name: "balance",
+    name: "custom",
     description: "カスタムゲームの参加管理とチーム分け",
   },
 
@@ -39,4 +39,4 @@ export const balanceCommand = {
   },
 };
 
-export default balanceCommand;
+export default customCommand;

@@ -59,7 +59,6 @@ export const handleJoinGame = async (interaction: any, gameId: string) => {
       player.puuid,
       player.riot_id,
       player.tagline,
-      0 // 強さの値は使用しないため0を設定
     );
 
     await updateGameEmbed(interaction, gameId);
@@ -242,7 +241,7 @@ export const handleVoiceJoin = async (interaction: any, gameId: string) => {
         player.puuid,
         player.riot_id,
         player.tagline,
-        0
+
       );
 
       addedCount++;

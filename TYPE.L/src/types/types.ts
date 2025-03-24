@@ -70,7 +70,7 @@ export interface GameHistory {
   game_id: string;
   server_id: string;
   match_id: string;
-  blue_team_win: number; // SQLiteではboolean型はnumber(0/1)として扱われる
+  blue_team_win: number;
   played_at: number;
   game_duration: number;
 }

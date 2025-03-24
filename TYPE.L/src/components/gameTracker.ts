@@ -1051,13 +1051,7 @@ export async function displayGameResult(interaction: any, gameId: string) {
         const gameDuration = matchDetails.info.gameDuration;
 
         // ゲーム全体の結果を保存
-        gameDB.saveGameResult(
-          gameId,
-          game.server_id,
-          matchId,
-          blueTeamWin,
-          gameDuration
-        );
+        gameDB.saveGameResult(gameId, matchId, blueTeamWin, gameDuration);
 
         // 各プレイヤーの結果を保存
         for (const participant of matchDetails.info.participants) {
@@ -1119,19 +1113,40 @@ export async function displayGameResult(interaction: any, gameId: string) {
           // プレイヤー情報が特定できた場合のみDBに保存
           if (playerInfo && playerInfo.user_id) {
             try {
+              // 先にゲーム結果を保存（まだ保存されていない場合）
+              try {
+                const blueTeamWin =
+                  participant.teamId === 100
+                    ? participant.win
+                    : !participant.win;
+                gameDB.saveGameResult(
+                  gameId,
+                  matchId,
+                  blueTeamWin,
+                  matchDetails.info.gameDuration
+                );
+              } catch (gameResultError) {
+                // マッチIDの重複などでエラーが出る可能性があるため無視
+                console.log(
+                  `[displayGameResult] ゲーム結果は既に保存されています`
+                );
+              }
+
+              // プレイヤー結果を保存（新しいシグネチャに合わせる）
               gameDB.savePlayerGameResult(
-                gameId,
-                game.server_id,
-                playerInfo.user_id,
-                matchId,
-                participant.championId,
-                champName,
-                participant.teamId === 100 ? "BLUE" : "RED",
-                participant.lane || "UNKNOWN",
-                participant.win,
-                participant.kills,
-                participant.deaths,
-                participant.assists
+                matchId, // matchId
+                playerInfo.user_id, // userId
+                participant.championId, // championId
+                champName, // championName
+                participant.teamId === 100 ? "BLUE" : "RED", // team
+                participant.lane || "UNKNOWN", // position
+                !!participant.win, // 明示的にboolean型に変換
+                participant.kills, // kills
+                participant.deaths, // deaths
+                participant.assists, // assists
+                participant.goldEarned || null, // goldEarned (あれば)
+                participant.visionScore || null, // visionScore (あれば)
+                participant.totalMinionsKilled || null // cs (あれば)
               );
 
               console.log(

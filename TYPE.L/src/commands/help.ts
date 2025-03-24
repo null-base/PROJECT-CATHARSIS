@@ -20,11 +20,11 @@ export const helpCommand = {
         choices: [
           { name: "register", value: "register" },
           { name: "profile", value: "profile" },
-          { name: "balance", value: "balance" },
+          { name: "custom", value: "custom" },
           { name: "history", value: "history" },
           { name: "stats", value: "stats" },
           { name: "about", value: "about" },
-          { name: "カスタムゲームガイド", value: "custom" },
+          { name: "カスタムゲームガイド", value: "customGuide" },
         ],
       },
     ],
@@ -65,9 +65,9 @@ export const helpCommand = {
               .setValue("profile")
               .setEmoji("👤"),
             new StringSelectMenuOptionBuilder()
-              .setLabel("balance")
+              .setLabel("custom")
               .setDescription("カスタムゲーム作成とチーム分け")
-              .setValue("balance")
+              .setValue("custom")
               .setEmoji("⚖️"),
             new StringSelectMenuOptionBuilder()
               .setLabel("history")
@@ -82,7 +82,7 @@ export const helpCommand = {
             new StringSelectMenuOptionBuilder()
               .setLabel("カスタムゲームガイド")
               .setDescription("カスタムゲームの機能と使い方")
-              .setValue("custom")
+              .setValue("customGuide")
               .setEmoji("🎮"),
           ]);
 
@@ -148,7 +148,7 @@ async function createGeneralHelpEmbed(client: any): Promise<EmbedBuilder> {
       {
         name: "🎮 カスタムゲーム",
         value:
-          "`/balance` - カスタムゲーム募集画面を作成します\nゲーム募集画面から参加登録、チーム分け、試合追跡などが行えます",
+          "`/custom` - カスタムゲーム募集画面を作成します\nゲーム募集画面から参加登録、チーム分け、試合追跡などが行えます",
         inline: false,
       },
       {
@@ -234,7 +234,7 @@ async function getCommandHelpEmbed(
         );
       break;
 
-    case "balance":
+    case "custom":
       embed
         .setColor(0xffc107)
         .setTitle("⚖️ バランスコマンド")
@@ -242,7 +242,7 @@ async function getCommandHelpEmbed(
         .addFields(
           {
             name: "使い方",
-            value: "`/balance` - カスタムゲーム募集画面を作成",
+            value: "`/custom` - カスタムゲーム募集画面を作成",
             inline: false,
           },
           {
@@ -330,7 +330,7 @@ async function getCommandHelpEmbed(
         );
       break;
 
-    case "custom":
+    case "customGuide":
       embed
         .setColor(0x8bc34a)
         .setTitle("🎮 カスタムゲーム機能ガイド")
@@ -339,7 +339,7 @@ async function getCommandHelpEmbed(
           {
             name: "基本的な流れ",
             value:
-              "1. `/balance` コマンドでゲーム募集画面を作成\n2. プレイヤーが「参加する」ボタンで参加登録\n3. レーン選択で希望ポジションを設定\n4. 「チーム分け」ボタンでチームを決定\n5. 実際にゲームを開始したら「ゲーム追跡」ボタンで監視\n6. ゲーム終了後に結果が自動表示される",
+              "1. `/custom` コマンドでゲーム募集画面を作成\n2. プレイヤーが「参加する」ボタンで参加登録\n3. レーン選択で希望ポジションを設定\n4. 「チーム分け」ボタンでチームを決定\n5. 実際にゲームを開始したら「ゲーム追跡」ボタンで監視\n6. ゲーム終了後に結果が自動表示される",
             inline: false,
           },
           {

@@ -9,14 +9,15 @@ export const DEV_GUILD_IDS = process.env.DEV_GUILD_IDS
 
 // BOT情報
 export const BOT_VERSION = process.env.BOT_VERSION || "NULL";
-export const BOT_DEVELOPER_ID =
-  process.env.BOT_DEVELOPER_ID || "834055392727269387";
-export const BOT_DEVELOPER_NAME = process.env.BOT_DEVELOPER_NAME || "null先生";
+export const BOT_DEVELOPER_ID = process.env.BOT_DEVELOPER_ID || "885153350931333151";
+export const BOT_DEVELOPER_NAME = process.env.BOT_DEVELOPER_NAME || "ぬる";
 export const BOT_WEBSITE = process.env.BOT_WEBSITE || "null-base.com";
 export const BOT_SUPPORT_SERVER =
   process.env.BOT_SUPPORT_SERVER || "https://discord.gg/wNgbkdXq6M";
 export const BOT_GITHUB =
   process.env.BOT_GITHUB || "https://github.com/null-base";
+export const MAINTENANCE_MODE =
+  process.env.MAINTENANCE_MODE === "true" || false;
 
 export const routingRegionMap: Record<string, string> = {
   na1: "americas",

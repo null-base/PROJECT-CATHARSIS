@@ -23,6 +23,7 @@ import {
   handleTrackGame,
   handleVoiceJoin,
 } from "../components/customGame";
+import { BOT_DEVELOPER_ID, MAINTENANCE_MODE } from "../lib/config";
 import { createErrorEmbed, createSuccessEmbed } from "../lib/embeds";
 
 const commands = {
@@ -38,6 +39,21 @@ const commands = {
 };
 
 export const interactionCreate = async (interaction: any) => {
+  // メンテナンスモードチェック
+  if (MAINTENANCE_MODE && interaction.user.id != BOT_DEVELOPER_ID) {
+    if (interaction.isCommand()) {
+      return interaction.reply({
+        embeds: [
+          createErrorEmbed(
+            "🔧 現在メンテナンス中です。しばらくお待ちください。"
+          ),
+        ],
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+    return;
+  }
+
   // モーダル送信処理
   if (interaction.type === InteractionType.ModalSubmit) {
     if (interaction.customId === "registerModal") {

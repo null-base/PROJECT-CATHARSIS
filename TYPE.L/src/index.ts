@@ -7,7 +7,12 @@ import {
 } from "discord.js";
 import * as commands from "./commands";
 import { interactionCreate } from "./events/interactionCreate";
-import { DEV_GUILD_IDS, DISCORD_TOKEN, MAINTENANCE_MODE } from "./lib/config";
+import {
+  DEV_GUILD_IDS,
+  DISCORD_TOKEN,
+  IS_DEVELOPMENT,
+  MAINTENANCE_MODE,
+} from "./lib/config";
 
 const client = new Client({
   intents: [
@@ -19,6 +24,13 @@ const client = new Client({
 
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user?.tag}`);
+
+  // 環境情報をログ出力
+  if (IS_DEVELOPMENT) {
+    console.log("🛠️ 開発環境で起動中");
+  } else {
+    console.log("🚀 本番環境で起動中");
+  }
 
   // メンテナンスモードの場合はステータスを変更
   if (MAINTENANCE_MODE) {

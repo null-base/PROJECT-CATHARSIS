@@ -281,8 +281,13 @@ export const debugCommand = {
           .setTitle("🎮 アクティブゲーム一覧")
           .setDescription(`現在実行中のゲーム: ${activeGames.length}件`);
 
+        // フィールド数制限（25個）を考慮して処理
+        const maxFields = 24;
+        const gamesToShow = activeGames.slice(0, maxFields);
+        const remainingGames = activeGames.length - gamesToShow.length;
+
         // ゲーム情報を追加
-        for (const game of activeGames) {
+        for (const game of gamesToShow) {
           const status = game.status === "TRACKING" ? "🔴 追跡中" : "🟢 募集中";
           const participants = gameDB.getParticipants(game.game_id).length;
           const createdAt = new Date(game.created_at * 1000).toLocaleString(
@@ -304,6 +309,15 @@ export const debugCommand = {
             name: `${status} - ${game.game_id}`,
             value: `サーバー: **${serverName}**\n作成: ${createdAt}\n参加者: ${participants}人\nチャンネル: <#${game.channel_id}>`,
             inline: true,
+          });
+        }
+
+        // 残りのゲーム数を表示
+        if (remainingGames > 0) {
+          embed.addFields({
+            name: "⚠️ 表示制限",
+            value: `他に${remainingGames}件のゲームがあります。\n詳細が必要な場合は個別にゲームIDで確認してください。`,
+            inline: false,
           });
         }
 

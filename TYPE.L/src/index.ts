@@ -13,6 +13,10 @@ import {
   IS_DEVELOPMENT,
   MAINTENANCE_MODE,
 } from "./lib/config";
+import { captureError, initSentry } from "./lib/sentry";
+
+// Sentryを最初に初期化
+initSentry();
 
 const client = new Client({
   intents: [
@@ -111,7 +115,14 @@ client.once("ready", async () => {
     }
   } catch (error) {
     console.error("コマンド登録中にエラーが発生しました:", error);
+    captureError(error as Error, { context: "command_registration" });
   }
+});
+
+// Discord.jsのエラーイベントをキャッチ
+client.on("error", (error) => {
+  console.error("Discord.js エラー:", error);
+  captureError(error, { context: "discord_client" });
 });
 
 client.on("interactionCreate", interactionCreate);

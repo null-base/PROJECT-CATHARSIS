@@ -24,16 +24,13 @@ export const profileCommand = {
           .setColor(0x0099ff)
           .setTitle("⚠️ 未登録ユーザー")
           .setDescription("プロフィールを表示するには登録が必要です")
-          .setFooter({
-            text: "Powered by @null_sensei • null-base.com",
-            iconURL:
-              "https://cdn.discordapp.com/avatars/834055392727269387/953d512ef19ef1e915fe733fa637b67e.webp",
-          })
           .addFields({
             name: "登録方法",
             value: "`/register` コマンドで登録してください",
             inline: true,
           });
+        // 標準フッターを追加
+        await addStandardFooter(registerEmbed, interaction.client);
         return interaction.editReply({
           embeds: [registerEmbed],
         });
@@ -130,7 +127,7 @@ export const profileCommand = {
       console.error("プロフィール取得エラー:", error);
       await interaction.editReply({
         embeds: [createErrorEmbed("プロフィールの取得に失敗しました")],
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

@@ -1,9 +1,11 @@
 import { Database } from "bun:sqlite";
 import type { PlayerData } from "../types/types";
 
-const db = new Database("lol_players.sqlite");
+// 統合されたデータベースを使用
+const db = new Database("lol_custom_games.sqlite");
 
-db.run(`
+// プレイヤーテーブルの作成（統合データベース内）
+db.exec(`
   CREATE TABLE IF NOT EXISTS players (
     user_id TEXT PRIMARY KEY,
     puuid TEXT UNIQUE,
@@ -28,23 +30,22 @@ export const getPlayer = (userId: string): PlayerData | null => {
 };
 
 export const savePlayer = (player: PlayerData) => {
-  db.run(
-    `INSERT OR REPLACE INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      player.user_id,
-      player.puuid,
-      player.riot_id,
-      player.tagline,
-      player.region,
-      player.solo_tier,
-      player.solo_division,
-      player.solo_lp,
-      player.flex_tier,
-      player.flex_division,
-      player.flex_lp,
-      player.level,
-      player.profile_icon_id,
-    ]
+  db.prepare(
+    `INSERT OR REPLACE INTO players VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    player.user_id,
+    player.puuid,
+    player.riot_id,
+    player.tagline,
+    player.region,
+    player.solo_tier,
+    player.solo_division,
+    player.solo_lp,
+    player.flex_tier,
+    player.flex_division,
+    player.flex_lp,
+    player.level,
+    player.profile_icon_id
   );
 };
 

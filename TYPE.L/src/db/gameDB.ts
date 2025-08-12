@@ -1,5 +1,4 @@
 import { Database } from "bun:sqlite";
-import fs from "fs";
 import type {
   ChampionStats,
   CustomGameData,
@@ -7,23 +6,42 @@ import type {
   ParticipantData,
 } from "../types/types";
 
-// データベースファイルのパス
+// データベースファイルのパス（統合済み）
 const DB_PATH = "lol_custom_games.sqlite";
 
 // データベース接続
 const db = new Database(DB_PATH);
 
 // SQLiteのパフォーマンス設定
-db.exec("PRAGMA journal_mode = WAL;"); // Write-Ahead Logging モード
-db.exec("PRAGMA synchronous = NORMAL;"); // 同期レベル最適化
-db.exec("PRAGMA foreign_keys = ON;"); // 外部キー制約を有効化
+db.exec("PRAGMA journal_mode = WAL;");
+db.exec("PRAGMA synchronous = NORMAL;");
+db.exec("PRAGMA foreign_keys = ON;");
 
 // データベース初期化（テーブル作成）
 function initDatabase() {
-  console.log("データベース構造を最適化して初期化します");
+  console.log("統合データベース構造を初期化します");
 
   try {
-    // サーバーテーブル - サーバー情報を正規化
+    // プレイヤーテーブル（統合）
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS players (
+        user_id TEXT PRIMARY KEY,
+        puuid TEXT UNIQUE,
+        riot_id TEXT,
+        tagline TEXT,
+        region TEXT,
+        solo_tier TEXT DEFAULT 'UNRANKED',
+        solo_division TEXT DEFAULT '',
+        solo_lp INTEGER DEFAULT 0,
+        flex_tier TEXT DEFAULT 'UNRANKED',
+        flex_division TEXT DEFAULT '',
+        flex_lp INTEGER DEFAULT 0,
+        level INTEGER,
+        profile_icon_id INTEGER DEFAULT 0
+      )
+    `);
+
+    // サーバーテーブル
     db.exec(`
       CREATE TABLE IF NOT EXISTS servers (
         id TEXT PRIMARY KEY,
@@ -33,7 +51,7 @@ function initDatabase() {
       )
     `);
 
-    // ユーザーテーブル - 参加ユーザーを正規化
+    // ゲームユーザーテーブル
     db.exec(`
       CREATE TABLE IF NOT EXISTS game_users (
         user_id TEXT PRIMARY KEY,
@@ -45,7 +63,7 @@ function initDatabase() {
       )
     `);
 
-    // ゲームテーブル - カスタムゲーム情報
+    // ゲームテーブル
     db.exec(`
       CREATE TABLE IF NOT EXISTS games (
         id TEXT PRIMARY KEY,
@@ -63,7 +81,7 @@ function initDatabase() {
       )
     `);
 
-    // ゲームに対する参加者テーブル
+    // 参加者テーブル
     db.exec(`
       CREATE TABLE IF NOT EXISTS participants (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,18 +154,14 @@ function initDatabase() {
     db.exec(
       "CREATE INDEX IF NOT EXISTS idx_player_performances_champion ON player_performances(champion_id, champion_name);"
     );
-
-    // テーブル作成の確認
-    const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-      .all();
-    console.log(
-      `作成されたテーブル: ${tables.map((t: any) => t.name).join(", ")}`
+    db.exec("CREATE INDEX IF NOT EXISTS idx_players_puuid ON players(puuid);");
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_players_riot_id ON players(riot_id);"
     );
 
-    console.log("データベース構造の最適化が完了しました");
+    console.log("✅ 統合データベース構造の初期化が完了しました");
   } catch (error) {
-    console.error("データベース初期化エラー:", error);
+    console.error("❌ データベース初期化エラー:", error);
     throw error;
   }
 }
@@ -628,7 +642,6 @@ export const getServerGameHistory = (
 
 // gameDBオブジェクトにエクスポート
 export const gameDB = {
-  getGame,
   createGame,
   updateGameMessage,
   updateGameStatus,
@@ -650,4 +663,5 @@ export const gameDB = {
   getServerGameHistory,
   registerServer,
   registerGameUser,
+  getGame,
 };

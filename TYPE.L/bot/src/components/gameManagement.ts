@@ -1,8 +1,6 @@
 import { ChannelType, EmbedBuilder } from "discord.js";
 import { gameDB } from "../db/gameDB";
-import { addStandardFooter } from "../lib/embedHelper";
 import { createErrorEmbed, createSuccessEmbed, createWarningEmbed } from "../lib/embeds";
-import { createNewCustomGame } from "./gameCreation";
 
 // ゲーム終了処理
 export const handleEndGame = async (interaction: any, gameId: string) => {
@@ -39,9 +37,6 @@ export const handleEndGame = async (interaction: any, gameId: string) => {
             : "参加者なし",
         inline: false,
       });
-
-    // 標準フッターを追加
-    await addStandardFooter(embed, interaction.client);
 
     // 元のメッセージを更新
     try {

@@ -1,7 +1,6 @@
-import { MessageFlags } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 import { getPlayer } from "../db";
 import { getChampionNameById, getProfileIconUrl } from "../lib/ddragon";
-import { createStandardEmbed } from "../lib/embedHelper";
 import { createErrorEmbed } from "../lib/embeds";
 import { RiotAPI } from "../lib/riotApi";
 
@@ -50,8 +49,7 @@ export const historyCommand = {
         )
       );
 
-      // 統一された方法でEmbed作成
-      const embed = await createStandardEmbed(interaction.client, 0x0099ff);
+      const embed = new EmbedBuilder().setColor(0x0099ff);
       embed
         .setTitle(`${accountData.gameName}#${accountData.tagLine} の最近の試合`)
         .setThumbnail(iconUrl)

@@ -2,7 +2,6 @@
 import { EmbedBuilder } from "discord.js";
 import { getPlayer } from "../db";
 import { gameDB } from "../db/gameDB";
-import { addStandardFooter } from "../lib/embedHelper";
 import { createErrorEmbed } from "../lib/embeds";
 
 // チャンピオン統計情報の型定義
@@ -144,8 +143,6 @@ export const statsCommand = {
             inline: false,
           });
         }
-
-        await addStandardFooter(embed, interaction.client);
         return await interaction.editReply({ embeds: [embed] });
       }
 
@@ -185,7 +182,7 @@ export const statsCommand = {
             }
           );
 
-        await addStandardFooter(embed, interaction.client);
+
         return await interaction.editReply({ embeds: [embed] });
       }
 
@@ -227,7 +224,7 @@ export const statsCommand = {
           });
         }
 
-        await addStandardFooter(embed, interaction.client);
+
         return await interaction.editReply({ embeds: [embed] });
       }
     } catch (error) {

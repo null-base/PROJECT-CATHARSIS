@@ -1,6 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 import { getChampionNameById } from "../lib/ddragon";
-import { addStandardFooter } from "../lib/embedHelper";
 import { formatGameTime } from "../lib/gameUtils";
 
 // 追跡中のゲームEmbed作成
@@ -62,8 +61,6 @@ export async function createGameTrackingEmbed(
     inline: false,
   });
 
-  // 標準フッターを追加
-  await addStandardFooter(embed, client);
 
   // ボタン作成
   const endTrackingButton = new ButtonBuilder()

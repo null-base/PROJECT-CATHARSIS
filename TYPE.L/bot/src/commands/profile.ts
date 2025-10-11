@@ -2,7 +2,6 @@ import { EmbedBuilder, MessageFlags } from "discord.js";
 import { getPlayer, savePlayer } from "../db";
 import { processMatchStats } from "../lib/calculations";
 import { getProfileIconUrl } from "../lib/ddragon";
-import { addStandardFooter } from "../lib/embedHelper";
 import { createErrorEmbed, createProfileEmbed } from "../lib/embeds";
 import { RiotAPI } from "../lib/riotApi";
 import type { PlayerData } from "../types/types";
@@ -29,8 +28,6 @@ export const profileCommand = {
             value: "`/register` コマンドで登録してください",
             inline: true,
           });
-        // 標準フッターを追加
-        await addStandardFooter(registerEmbed, interaction.client);
         return interaction.editReply({
           embeds: [registerEmbed],
         });
@@ -119,8 +116,7 @@ export const profileCommand = {
         topChampions,
         topLanes,
       }).setThumbnail(iconUrl);
-      // 標準フッターを追加
-      await addStandardFooter(embed, interaction.client);
+
 
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {

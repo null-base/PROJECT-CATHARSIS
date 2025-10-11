@@ -1,21 +1,21 @@
-import { createNewCustomGame } from "../components/gameCreation";
-import { handleEndGame } from "../components/gameManagement";
+import { createNewCustomGame } from "./gameCreation";
+import { handleEndGame } from "./gameManagement";
 import {
   handleJoinGame,
   handleLaneSelect,
   handleLeaveGame,
   handleVoiceJoin,
-} from "../components/gameParticipation";
+} from "./gameParticipation";
 import {
   displayGameResult,
   handleEndTracking,
   handleShowResult,
   handleTrackGame,
-} from "../components/gameTracker";
+} from "./gameTracker";
 import {
   handleBalanceMethodSelect,
   handleTeamBalance,
-} from "../components/teamBalancer";
+} from "./teamBalancer";
 import { updateGameEmbed } from "./gameUI";
 
 // 他のファイルから必要な関数をエクスポート

@@ -2,7 +2,6 @@ import { EmbedBuilder, MessageFlags } from "discord.js";
 import { getAllPlayers } from "../db";
 import { gameDB } from "../db/gameDB";
 import { BOT_DEVELOPER_ID } from "../lib/config";
-import { addStandardFooter } from "../lib/embedHelper";
 import {
   createErrorEmbed,
   createSuccessEmbed,
@@ -205,9 +204,6 @@ export const debugCommand = {
           });
         }
 
-        // 標準フッターを追加
-        await addStandardFooter(embed, interaction.client);
-
         return await interaction.editReply({ embeds: [embed] });
       } catch (error) {
         console.error("ゲーム情報取得エラー:", error);
@@ -321,8 +317,6 @@ export const debugCommand = {
           });
         }
 
-        // 標準フッターを追加
-        await addStandardFooter(embed, interaction.client);
 
         return await interaction.editReply({ embeds: [embed] });
       } catch (error) {
@@ -394,7 +388,7 @@ async function createStatusEmbed(client: any): Promise<EmbedBuilder> {
       }
     );
 
-  return await addStandardFooter(embed, client);
+  return embed;
 }
 
 // アクティブなゲーム一覧を取得

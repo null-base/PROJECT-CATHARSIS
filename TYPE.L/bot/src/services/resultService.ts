@@ -2,7 +2,6 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder
 import { getPlayer } from "../db";
 import { gameDB } from "../db/gameDB";
 import { getChampionNameById } from "../lib/ddragon";
-import { addStandardFooter } from "../lib/embedHelper";
 import { createErrorEmbed, createSuccessEmbed } from "../lib/embeds";
 import { formatGameTime } from "../lib/gameUtils";
 import { RiotAPI } from "../lib/riotApi";
@@ -217,9 +216,6 @@ async function createGameResultEmbed(
     }
   );
 
-  // 標準フッターを追加
-  await addStandardFooter(embed, client);
-
   return embed;
 }
 
@@ -237,9 +233,6 @@ async function createErrorResultEmbed(client: any, gameId: string, matchId: stri
       value: error instanceof Error ? error.message : "不明なエラー",
       inline: false,
     });
-
-  // 標準フッターを追加
-  await addStandardFooter(fallbackEmbed, client);
 
   return fallbackEmbed;
 }

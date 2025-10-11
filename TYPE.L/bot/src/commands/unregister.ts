@@ -1,6 +1,5 @@
-import { MessageFlags } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 import { deletePlayer } from "../db";
-import { createStandardEmbed } from "../lib/embedHelper";
 import { createErrorEmbed } from "../lib/embeds";
 
 export const unregisterCommand = {
@@ -23,10 +22,7 @@ export const unregisterCommand = {
       }
 
       // 統一された方法でEmbed作成
-      const successEmbed = await createStandardEmbed(
-        interaction.client,
-        0x00ff00
-      );
+      const successEmbed = await new EmbedBuilder().setColor(0x00ff00);
       successEmbed
         .setTitle("✅ アカウント削除完了")
         .setDescription("登録情報を正常に削除しました");

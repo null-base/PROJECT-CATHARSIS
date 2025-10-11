@@ -99,7 +99,6 @@ export const handleEndTracking = async (interaction: any, gameId: string) => {
 // 終了メッセージの更新
 async function updateEndTrackingMessage(interaction: any, game: any) {
   const { ChannelType, EmbedBuilder } = await import("discord.js");
-  const { addStandardFooter } = await import("../lib/embedHelper");
 
   const channel = await interaction.client.channels.fetch(game.channel_id);
   if (!channel || channel.type !== ChannelType.GuildText) return;
@@ -112,9 +111,6 @@ async function updateEndTrackingMessage(interaction: any, game: any) {
     .setColor(0x7289da)
     .setTitle("🛑 追跡終了")
     .setDescription(`ゲームID: ${game.id}\n試合追跡は手動で終了されました。`);
-
-  // 標準フッターを追加
-  await addStandardFooter(embed, interaction.client);
 
   await message.edit({
     embeds: [embed],

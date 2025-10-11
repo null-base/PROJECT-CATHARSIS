@@ -2,12 +2,10 @@ import { EmbedBuilder } from "discord.js";
 import {
   BOT_DEVELOPER_ID,
   BOT_DEVELOPER_NAME,
-  BOT_GITHUB,
   BOT_SUPPORT_SERVER,
   BOT_VERSION,
   BOT_WEBSITE,
 } from "../lib/config";
-import { addStandardFooter } from "../lib/embedHelper";
 
 export const aboutCommand = {
   data: {
@@ -58,14 +56,10 @@ export const aboutCommand = {
             name: "🔗 リンク",
             value:
               `[サポートサーバー](${BOT_SUPPORT_SERVER})\n` +
-              `[GitHub](${BOT_GITHUB})\n` +
               `[ウェブサイト](https://${BOT_WEBSITE})`,
             inline: true,
           }
         );
-
-      // 標準フッターを追加
-      await addStandardFooter(embed, interaction.client);
 
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {

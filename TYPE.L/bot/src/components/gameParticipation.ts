@@ -1,5 +1,5 @@
 import { MessageFlags } from "discord.js";
-import { updateGameEmbed } from "../components/gameUI";
+import { updateGameEmbed } from "./gameUI";
 import { getPlayer } from "../db";
 import { gameDB } from "../db/gameDB";
 import {

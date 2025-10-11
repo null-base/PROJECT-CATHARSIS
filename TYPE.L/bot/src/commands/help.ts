@@ -4,7 +4,6 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from "discord.js";
-import { addStandardFooter } from "../lib/embedHelper";
 import { createErrorEmbed } from "../lib/embeds";
 
 export const helpCommand = {
@@ -170,8 +169,7 @@ async function createGeneralHelpEmbed(client: any): Promise<EmbedBuilder> {
     client.user.displayAvatarURL({ dynamic: true, size: 128 })
   );
 
-  // 標準フッターを追加
-  return await addStandardFooter(embed, client);
+  return embed;
 }
 
 // 特定コマンドの詳細ヘルプを取得
@@ -367,7 +365,7 @@ async function getCommandHelpEmbed(
   }
 
   // 標準フッターを追加
-  return await addStandardFooter(embed, client);
+  return await embed;
 }
 
 export default helpCommand;

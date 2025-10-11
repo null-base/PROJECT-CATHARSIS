@@ -2,13 +2,6 @@ import { EmbedBuilder } from "discord.js";
 import type { ParticipantData, PlayerData } from "../types/types";
 import { BOT_DEVELOPER_ID, BOT_DEVELOPER_NAME, BOT_WEBSITE } from "./config";
 
-// フッター用の共通関数
-const addStandardFooter = (embed: EmbedBuilder) => {
-  return embed.setFooter({
-    text: `Powered by @${BOT_DEVELOPER_NAME} • ${BOT_WEBSITE}`,
-    iconURL: `https://cdn.discordapp.com/avatars/${BOT_DEVELOPER_ID}/953d512ef19ef1e915fe733fa637b67e.webp`,
-  });
-};
 
 // チーム分け方法の表示名を取得する関数
 export function getMethodName(method: string): string {
@@ -84,13 +77,10 @@ export const createCustomGameEmbed = (
         inline: true,
       }
     );
-
-  // 標準フッターを追加
-  return addStandardFooter(embed);
 };
 
 export const createRegisterEmbed = (player: PlayerData) => {
-  return addStandardFooter(
+  return (
     new EmbedBuilder()
       .setTitle("✅ 登録完了")
       .setDescription(`${player.riot_id}#${player.tagline}`)
@@ -127,7 +117,7 @@ export const createProfileEmbed = (player: PlayerData, stats: any) => {
     .map((lane: string) => `• ${lane}`)
     .join("\n");
 
-  return addStandardFooter(
+  return (
     new EmbedBuilder()
       .setTitle(`${player.riot_id}#${player.tagline}`)
       .setColor(0x00ff00) // 固定色に変更
@@ -174,7 +164,7 @@ export const createProfileEmbed = (player: PlayerData, stats: any) => {
 };
 
 export const createBalanceEmbed = (teamA: any[], teamB: any[]) => {
-  return addStandardFooter(
+  return (
     new EmbedBuilder()
       .setTitle("⚖️ チームバランス結果")
       .setColor(0x7289da)
@@ -194,7 +184,7 @@ export const createBalanceEmbed = (teamA: any[], teamB: any[]) => {
 };
 
 export const createErrorEmbed = (message: string) => {
-  return addStandardFooter(
+  return (
     new EmbedBuilder().setColor(0xff0000).setDescription(`❌ ${message}`)
   );
 };
@@ -213,7 +203,7 @@ export const createCustomBalanceEmbed = (
       .join("\n");
   };
 
-  return addStandardFooter(
+  return (
     new EmbedBuilder()
       .setColor(0x7289da)
       .setTitle("⚖️ チームバランス結果")

@@ -1,0 +1,25 @@
+{
+  "name": "type.l",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
+  },
+  "devDependencies": {
+    "@prisma/client": "^6.17.1",
+    "@types/bun": "latest",
+    "prisma": "^6.17.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@fightmegg/riot-api": "^0.0.21",
+    "@sentry/bun": "^10.19.0",
+    "axios": "^1.12.2",
+    "discord.js": "^14.23.2",
+    "dotenv": "^16.6.1"
+  }
+}
